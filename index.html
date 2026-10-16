@@ -228,7 +228,7 @@
           const pick = el("button", { class: "king-pick", type: "button", title: "First king",
             onclick: () => { king = i; kingBtns.forEach((b, j) => b.classList.toggle("on", j === i)); } }, "👑");
           inputs.push(input); kingBtns.push(pick);
-          return el("label", {}, el("span", { class: "seat-no" }, String(i + 1)), input, pick);
+          return el("label", {}, pick, el("span", { class: "seat-no" }, String(i + 1)), input);
         });
         // Dev convenience: tap the hint to fill ten names.
         const hint = el("p", { class: "hint", onclick: () => {
