@@ -31,17 +31,21 @@
     .preview { margin-top: .6rem; padding: .35rem .5rem; border-radius: 8px; font-size: .95rem; letter-spacing: 1px; }
     .preview.pass { background: var(--green-bg); } .preview.fail { background: var(--red-bg); }
     .preview.none { color: var(--muted); }
-    .icons span { font-size: 1.8rem; padding: .2rem .5rem; border-radius: 10px; background: var(--panel); margin-right: .3rem; }
+    /* A2: the rogue chip sits well below everything else, out of thumb's way for normal quests */
+    .apart { display: flex; justify-content: flex-end; margin-top: 3.5rem; padding-top: .75rem; border-top: 1px dashed var(--line); }
+    .apart .btn { min-height: 40px; font-size: 1.1rem; opacity: .6; }
+    .apart .btn.on { opacity: 1; }
+    .team { font-size: 1rem; font-weight: 700; margin: .9rem 0 0; }
+    .record { width: 100%; margin-top: .9rem; background: var(--accent); border-color: var(--accent); font-weight: 600; }
   </style>
 </head>
 <body>
-  <h1>Rogue fails · 4 ways to capture them</h1>
-  <p>Assumed rules (please check): a rogue card is one of the team's cards. One rogue flips the result the other cards give; two rogues cancel out. Rogue icon in these mocks: 🔀. Tap rows to try them; the bar under each shows the review-grid result row.</p>
+  <h1>Rogue fails · chosen design A2 first, then the originals</h1>
+  <p>Assumed rules (please check): a rogue card is one of the team's cards. One rogue flips the result the other cards give; two rogues cancel out. Rogue icon in these mocks: 🎭. Tap rows to try them; the bar under each shows the review-grid result row.</p>
   <div class="controls">Team size
     <span id="sizes"></span>
     &nbsp; Fails to fail <span id="ftf"></span>
   </div>
-  <p class="icons">Other rogue icons: <span>🔀</span><span>🃏</span><span>🌀</span><span>🎭</span></p>
   <div id="out"></div>
 
   <script>
@@ -62,7 +66,7 @@
       const base = fails >= failsToFail ? "fail" : "pass";
       return rogues % 2 === 1 ? (base === "fail" ? "pass" : "fail") : base;
     }
-    const cards = (fails, rogues) => "✅".repeat(size - fails - rogues) + "❌".repeat(fails) + "🔀".repeat(rogues);
+    const cards = (fails, rogues) => "✅".repeat(size - fails - rogues) + "❌".repeat(fails) + "🎭".repeat(rogues);
 
     function row(v, fails, rogues, extra = "") {
       const s = state[v];
@@ -79,19 +83,32 @@
     }
 
     const VARIANTS = {
-      A: ["A · rogue chip", "A small 🔀 chip under the list cycles 0 → 1 → 2 rogues. The list rebuilds with that many 🔀 cards, and the tints flip to match. One tap in the rare case, invisible otherwise.",
+      A2: ["A2 · rogue chip set apart (chosen)", "The whole quest screen as it would look: result rows, team names, Record, and then, after a big gap, a faded 🎭 chip at the bottom right. Tap it to cycle 0 → 1 → 2 rogues; the rows above rebuild with 🎭 cards and the colours flip.",
+        (v) => {
+          const s = state[v];
+          const chip = el("button", { class: `btn ${s.rogues ? "on" : ""}`,
+            onclick: () => { s.rogues = (s.rogues + 1) % Math.min(3, size + 1); s.fails = null; render(); } },
+            s.rogues ? "🎭".repeat(s.rogues) : "🎭");
+          const names = ["Ann", "Bob", "Cal", "Dee", "Eve"].slice(0, size).map((n) => "🛡️ " + n).join("  ");
+          return el("div", {},
+            el("div", { class: "fails" }, normalRows(v, s.rogues)),
+            el("div", { class: "team" }, `⚔️ ${names}`),
+            el("button", { class: "btn record" }, "⚔️ Record quest"),
+            el("div", { class: "apart" }, chip));
+        }],
+      A: ["A · rogue chip", "A small 🎭 chip under the list cycles 0 → 1 → 2 rogues. The list rebuilds with that many 🎭 cards, and the tints flip to match. One tap in the rare case, invisible otherwise.",
         (v) => {
           const s = state[v];
           const chip = el("button", { class: `btn rogue-chip ${s.rogues ? "on" : ""}`,
             onclick: () => { s.rogues = (s.rogues + 1) % Math.min(3, size + 1); s.fails = null; render(); } },
-            s.rogues ? "🔀".repeat(s.rogues) : "🔀 0");
+            s.rogues ? "🎭".repeat(s.rogues) : "🎭 0");
           return el("div", { class: "fails" }, normalRows(v, s.rogues), chip);
         }],
-      B: ["B · tuck-away row", "The normal list, plus one faded 🔀 row at the end. Tapping it opens the rogue rows (one rogue, then two) under a dashed line.",
+      B: ["B · tuck-away row", "The normal list, plus one faded 🎭 row at the end. Tapping it opens the rogue rows (one rogue, then two) under a dashed line.",
         (v) => {
           const s = state[v];
           const rows = [...normalRows(v)];
-          if (!s.open) rows.push(el("button", { class: "btn rare", onclick: () => { s.open = true; render(); } }, "🔀 …"));
+          if (!s.open) rows.push(el("button", { class: "btn rare", onclick: () => { s.open = true; render(); } }, "🎭 …"));
           else {
             rows.push(el("div", { class: "divider" }), ...normalRows(v, 1));
             if (size >= 2) rows.push(el("div", { class: "divider" }), ...normalRows(v, 2));
@@ -101,7 +118,7 @@
       C: ["C · everything listed", "Every possible result in one list: normal rows bright, rogue rows faded below a dashed line. No hidden controls, but the list gets long (15 rows for a team of 5).",
         (v) => el("div", { class: "fails" }, normalRows(v), el("div", { class: "divider" }), normalRows(v, 1),
           size >= 2 ? [el("div", { class: "divider" }), normalRows(v, 2)] : [])],
-      D: ["D · card counters", "Three counters that always add up to the team size. Tap − / + on ❌ or 🔀; ✅ fills the rest. Same screen for every case, but more taps for the common one.",
+      D: ["D · card counters", "Three counters that always add up to the team size. Tap − / + on ❌ or 🎭; ✅ fills the rest. Same screen for every case, but more taps for the common one.",
         (v) => {
           const s = state[v];
           if (s.fails === null) { s.fails = 0; s.rogues = 0; }
@@ -113,7 +130,7 @@
           return el("div", {},
             el("div", { class: "counter" }, el("span", { class: "icon" }, "✅"), el("span", { class: "n" }, String(size - s.fails - s.rogues))),
             counter("❌", s.fails, (n) => s.fails = n, size - s.rogues),
-            counter("🔀", s.rogues, (n) => s.rogues = n, Math.min(2, size - s.fails)));
+            counter("🎭", s.rogues, (n) => s.rogues = n, Math.min(2, size - s.fails)));
         }]
     };
     for (const v of Object.keys(VARIANTS)) state[v] = { fails: null, rogues: 0, open: false };
