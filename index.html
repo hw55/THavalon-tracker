@@ -63,7 +63,9 @@
     .center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; width: 45%; }
     .center .big { font-size: 2.2rem; font-weight: 800; line-height: 1; }
     .center .sub { font-size: .85rem; color: var(--muted); margin-top: .25rem; }
-    .center .pass { color: var(--green); } .center .fail { color: var(--red); }
+    .center.verdict { aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .center.verdict.pass { background: rgba(63, 185, 80, .35); }
+    .center.verdict.fail { background: rgba(248, 81, 73, .3); }
 
     .presets { display: flex; gap: .4rem; justify-content: center; margin-bottom: .25rem; }
     .presets .btn { min-height: 40px; padding: 0 .8rem; font-size: 1.05rem; }
@@ -253,14 +255,14 @@
       }
 
       // Players around the table, clockwise from the top, seating order; `center` sits in the middle.
-      function ring(seats, center) {
+      function ring(seats, center, centerClass = "") {
         const n = seats.length;
         seats.forEach((node, i) => {
           const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
           node.style.left = `${50 + 39 * Math.cos(angle)}%`;
           node.style.top = `${50 + 39 * Math.sin(angle)}%`;
         });
-        return el("div", { class: "ring" }, seats, el("div", { class: "center" }, center));
+        return el("div", { class: "ring" }, seats, el("div", { class: `center ${centerClass}` }, center));
       }
 
       function proposePanel(view) {
@@ -303,13 +305,10 @@
           onclick: () => { if (ui.approvals.has(i)) ui.approvals.delete(i); else ui.approvals.add(i); renderCapture(view); }
         }));
         const yes = ui.approvals.size, passes = yes > n / 2;
-        const center = [
-          el("div", { class: `big ${passes ? "pass" : "fail"}` }, `${yes}–${n - yes}`),
-          el("div", { class: `sub ${passes ? "pass" : "fail"}` }, passes ? "👍" : "👎")
-        ];
+        const center = el("div", { class: "big" }, `${yes}–${n - yes}`);
         return el("div", {},
+          ring(seats, center, `verdict ${passes ? "pass" : "fail"}`),
           presetBar,
-          ring(seats, center),
           el("button", { class: "btn primary", onclick: () => tryAppend({ type: "vote", approvals: [...ui.approvals].sort((a, b) => a - b) }) }, "🗳️ Record vote"));
       }
 
