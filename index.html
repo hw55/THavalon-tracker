@@ -116,7 +116,6 @@
     <header>
       <h1>🏰</h1>
       <div class="actions">
-        <button id="reload" class="btn small icon" title="Reload app">🔄</button>
         <button id="load" class="btn small icon" title="Load a saved game">📂</button>
         <input id="load-file" type="file" accept=".json,application/json" hidden>
         <button id="save" class="btn small icon" title="Save game to a file">💾</button>
@@ -455,9 +454,6 @@
         showTab("review");
       });
 
-      // Reload to pick up a new version of the app. The game is autosaved, so nothing is lost.
-      let reloading = false;
-      $("#reload").addEventListener("click", () => { reloading = true; location.reload(); });
 
       // The phone's back button is undo. One extra history entry is kept on top; pressing back pops it
       // (firing popstate while we're still on the page), we undo, and push it again. With nothing left
@@ -469,7 +465,7 @@
         history.pushState({ thavalon: true }, "");
       });
       window.addEventListener("beforeunload", (e) => {
-        if (!events.length || reloading) return;
+        if (!events.length) return;
         e.preventDefault();
         e.returnValue = "";
       });
