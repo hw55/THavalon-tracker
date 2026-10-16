@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOCK · review grid variants</title>
+  <!-- PROTOTYPE: throwaway mock for choosing how the review grid shows off-approve / on-reject. Delete once decided. -->
+  <style>
+    :root { --bg: #0f1115; --panel: #1a1d24; --line: #2a2e37; --text: #e8e8ec; --muted: #8b8f9a;
+      --team: #2f3f6e; --green-bg: rgba(63, 185, 80, .22); --red-bg: rgba(248, 81, 73, .22); }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: .75rem .5rem 3rem; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, sans-serif; }
+    h2 { font-size: 1rem; margin: 1.6rem .25rem .2rem; }
+    p { color: var(--muted); font-size: .85rem; margin: 0 .25rem .5rem; }
+    table.grid { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: .9rem; }
+    .grid th, .grid td { text-align: center; padding: 0; height: 32px; border-bottom: 1px solid var(--line); }
+    .grid th { font-weight: 600; vertical-align: bottom; padding-bottom: .3rem; }
+    .grid th.vname span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: .75rem; }
+    .grid td.label, .grid th.label { width: 2rem; color: var(--muted); font-size: .8rem; font-weight: 700; }
+    .grid td.res, .grid th.res { width: 1.6rem; }
+    .grid td.team { background: var(--team); }
+    .grid td .crown { font-size: .7rem; vertical-align: super; }
+    .grid tr.quest-start td { border-top: 2px solid var(--muted); }
+    .grid tr.result td { height: 28px; font-size: .85rem; letter-spacing: 1px; }
+    .grid tr.result td.pass { background: var(--green-bg); } .grid tr.result td.fail { background: var(--red-bg); }
+    .grid .vdot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
+    .grid .vdot.g { background: #3fb950; } .grid .vdot.r { background: #f85149; opacity: .7; }
+    .grid tr.totals td { height: 30px; font-size: .8rem; border-top: 2px solid var(--muted); }
+
+    /* A: expected votes faded */
+    .A td.expected { opacity: .28; }
+    /* C: odd votes outlined */
+    .C td.odd { outline: 2px solid #e3b341; outline-offset: -3px; border-radius: 6px; }
+    /* E: odd votes get a bright fill, expected stay plain */
+    .E td.odd.offapprove { background: rgba(63, 185, 80, .45); }
+    .E td.odd.onreject { background: rgba(248, 81, 73, .45); }
+  </style>
+</head>
+<body>
+  <h1 style="font-size:1.1rem;margin:0 .25rem">Review grid · 5 ways to show odd votes</h1>
+  <p>Same sample game in each. Odd votes: <b>off-approve</b> (🟢 while not on the team) and <b>on-reject</b> (🔴 while on the team). Team = blue cells.</p>
+  <div id="out"></div>
+
+  <script src="game.js"></script>
+  <script>
+    // Sample 7-player game, built through the real model so it's legal.
+    const players = ["Ann", "Bob", "Cal", "Dee", "Eve", "Fay", "Gus"];
+    let e = Game.append(Game.create(), { type: "setup", players, firstKing: 0 });
+    const step = (type, data) => { e = Game.append(e, { type, ...data }); };
+    // Q1: Ann proposes Ann+Bob; Cal and Fay off-approve; passes; clean.
+    step("propose", { team: [0, 1] }); step("vote", { approvals: [0, 1, 2, 5] }); step("quest", { fails: 0 });
+    // Q2: Bob's team rejected (Cal rejects own team), Cal's team passes, one fail.
+    step("propose", { team: [1, 2, 3] }); step("vote", { approvals: [1, 3, 5] });
+    step("propose", { team: [2, 3, 4] }); step("vote", { approvals: [2, 3, 4, 6] }); step("quest", { fails: 1 });
+    // Q3: two rejections then a pass; Gus keeps off-approving.
+    step("propose", { team: [3, 4, 5] }); step("vote", { approvals: [3, 4, 6] });
+    step("propose", { team: [4, 5, 6] }); step("vote", { approvals: [4, 6, 0] });
+    step("propose", { team: [5, 6, 0] }); step("vote", { approvals: [5, 6, 0, 2] }); step("quest", { fails: 0 });
+    // Q4 in progress: proposed, not yet voted.
+    step("propose", { team: [6, 0, 1, 2] });
+    const view = Game.replay(e);
+
+    function el(tag, attrs = {}, ...kids) {
+      const n = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+      for (const c of kids.flat()) if (c != null) n.append(c.nodeType ? c : document.createTextNode(c));
+      return n;
+    }
+
+    // icons(kind) → what to draw for each of the four cases.
+    function grid(variant, { icons, totals }) {
+      const odd = view.players.map(() => 0);
+      const head = el("tr", {}, el("th", { class: "label" }),
+        view.players.map((nm) => el("th", { class: "vname" }, el("span", {}, nm.slice(0, 8)))), el("th", { class: "res" }));
+      const rows = [];
+      view.quests.forEach((q) => {
+        q.proposals.forEach((p, pi) => {
+          const hammer = p.approvals === null && p.approved === true;
+          const tr = el("tr", { class: pi === 0 ? "quest-start" : "" }, el("td", { class: "label" }, pi === 0 ? String(q.number) : ""));
+          view.players.forEach((_, i) => {
+            const onTeam = p.team.includes(i);
+            let text = "·", cls = "";
+            if (p.approvals !== null) {
+              const yes = p.approvals.includes(i);
+              const kind = yes ? (onTeam ? "onapprove" : "offapprove") : (onTeam ? "onreject" : "offreject");
+              const isOdd = kind === "offapprove" || kind === "onreject";
+              if (isOdd) odd[i] += 1;
+              text = icons[kind];
+              cls = `${kind} ${isOdd ? "odd" : "expected"}`;
+            } else if (hammer) text = "";
+            const td = el("td", { class: `${cls} ${onTeam ? "team" : ""}` }, text);
+            if (p.king === i) td.append(el("span", { class: "crown" }, "👑"));
+            tr.append(td);
+          });
+          tr.append(el("td", { class: "res" }, p.approved === null ? "" : el("span", { class: `vdot ${p.approved ? "g" : "r"}` })));
+          rows.push(tr);
+        });
+        if (q.result) {
+          const size = q.proposals.at(-1).team.length;
+          rows.push(el("tr", { class: "result" }, el("td", { class: "label" }, "⚔️"),
+            el("td", { class: q.result, colspan: String(view.players.length + 1) }, "✅".repeat(size - q.fails) + "❌".repeat(q.fails))));
+        }
+      });
+      if (totals) rows.push(el("tr", { class: "totals" }, el("td", { class: "label" }, "👀"),
+        odd.map((n) => el("td", {}, n ? String(n) : "")), el("td")));
+      return el("table", { class: `grid ${variant}` }, el("thead", {}, head), el("tbody", {}, rows));
+    }
+
+    const plain = { onapprove: "🟢", offapprove: "🟢", onreject: "🔴", offreject: "🔴" };
+    const VARIANTS = [
+      ["Now", "Current grid, for comparison.", "", { icons: plain }],
+      ["A · fade expected", "On-approve and off-reject are faded; odd votes stay bright.", "A", { icons: plain }],
+      ["B · own icons", "Off-approve = 🟡, on-reject = 🟠. Expected votes unchanged.", "",
+        { icons: { onapprove: "🟢", offapprove: "🟡", onreject: "🟠", offreject: "🔴" } }],
+      ["C · outline", "Odd votes get a yellow outline.", "C", { icons: plain }],
+      ["D · fade + totals", "A, plus a 👀 row counting each player's odd votes.", "A", { icons: plain, totals: true }],
+      ["E · fill odd", "Odd votes get a strong green/red fill, so they pop even inside the blue team band.", "E", { icons: plain }]
+    ];
+    const out = document.getElementById("out");
+    for (const [title, note, variant, opts] of VARIANTS) out.append(el("h2", {}, title), el("p", {}, note), grid(variant, opts));
+  </script>
+</body>
+</html>
