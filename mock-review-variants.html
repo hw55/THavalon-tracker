@@ -25,20 +25,15 @@
     .grid tr.result td.pass { background: var(--green-bg); } .grid tr.result td.fail { background: var(--red-bg); }
     .grid .vdot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
     .grid .vdot.g { background: #3fb950; } .grid .vdot.r { background: #f85149; opacity: .7; }
-    .grid tr.totals td { height: 30px; font-size: .8rem; border-top: 2px solid var(--muted); }
-
-    /* A: expected votes faded */
-    .A td.expected { opacity: .28; }
-    /* C: odd votes outlined */
-    .C td.odd { outline: 2px solid #e3b341; outline-offset: -3px; border-radius: 6px; }
-    /* E: odd votes get a bright fill, expected stay plain */
-    .E td.odd.offapprove { background: rgba(63, 185, 80, .45); }
-    .E td.odd.onreject { background: rgba(248, 81, 73, .45); }
+    .grid tr.gap td { height: 14px; border: 0; }
+    .picker { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem .25rem; }
+    .picker span { font-size: 1.8rem; padding: .2rem .5rem; border-radius: 10px; background: var(--panel); }
   </style>
 </head>
 <body>
-  <h1 style="font-size:1.1rem;margin:0 .25rem">Review grid · 5 ways to show odd votes</h1>
-  <p>Same sample game in each. Odd votes: <b>off-approve</b> (🟢 while not on the team) and <b>on-reject</b> (🔴 while on the team). Team = blue cells.</p>
+  <h1 style="font-size:1.1rem;margin:0 .25rem">Off-approve icon candidates</h1>
+  <p>On-reject = 💔 in every grid. Expected votes stay 🟢 / 🔴. Same sample game: Cal and Gus keep approving teams they're not on.</p>
+  <div class="picker" id="picker"></div>
   <div id="out"></div>
 
   <script src="game.js"></script>
@@ -99,6 +94,7 @@
           const size = q.proposals.at(-1).team.length;
           rows.push(el("tr", { class: "result" }, el("td", { class: "label" }, "⚔️"),
             el("td", { class: q.result, colspan: String(view.players.length + 1) }, "✅".repeat(size - q.fails) + "❌".repeat(q.fails))));
+          rows.push(el("tr", { class: "gap" }, el("td", { colspan: String(view.players.length + 2) })));
         }
       });
       if (totals) rows.push(el("tr", { class: "totals" }, el("td", { class: "label" }, "👀"),
@@ -106,18 +102,22 @@
       return el("table", { class: `grid ${variant}` }, el("thead", {}, head), el("tbody", {}, rows));
     }
 
-    const plain = { onapprove: "🟢", offapprove: "🟢", onreject: "🔴", offreject: "🔴" };
-    const VARIANTS = [
-      ["Now", "Current grid, for comparison.", "", { icons: plain }],
-      ["A · fade expected", "On-approve and off-reject are faded; odd votes stay bright.", "A", { icons: plain }],
-      ["B · own icons", "Off-approve = 🟡, on-reject = 🟠. Expected votes unchanged.", "",
-        { icons: { onapprove: "🟢", offapprove: "🟡", onreject: "🟠", offreject: "🔴" } }],
-      ["C · outline", "Odd votes get a yellow outline.", "C", { icons: plain }],
-      ["D · fade + totals", "A, plus a 👀 row counting each player's odd votes.", "A", { icons: plain, totals: true }],
-      ["E · fill odd", "Odd votes get a strong green/red fill, so they pop even inside the blue team band.", "E", { icons: plain }]
+    const CANDIDATES = [
+      ["💚", "green heart: pairs with 💔"],
+      ["❇️", "sparkle"],
+      ["✳️", "asterisk"],
+      ["🍀", "four-leaf clover"],
+      ["🐍", "snake: 'sneaky' approve"],
+      ["🤢", "green face"],
+      ["🟩", "green square: same colour as 🟢, different shape"],
+      ["✅", "for reference only: already used for quest cards"]
     ];
+    document.getElementById("picker").append(...CANDIDATES.map(([icon]) => el("span", {}, icon)));
     const out = document.getElementById("out");
-    for (const [title, note, variant, opts] of VARIANTS) out.append(el("h2", {}, title), el("p", {}, note), grid(variant, opts));
+    for (const [icon, note] of CANDIDATES) {
+      const icons = { onapprove: "🟢", offapprove: icon, onreject: "💔", offreject: "🔴" };
+      out.append(el("h2", {}, `${icon}  off-approve`), el("p", {}, note), grid("", { icons }));
+    }
   </script>
 </body>
 </html>

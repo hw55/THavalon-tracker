@@ -101,6 +101,7 @@
     .grid tr.quest-start td { border-top: 2px solid var(--muted); }
     .grid tr.result td { height: 28px; font-size: .85rem; letter-spacing: 1px; }
     .grid tr.result td.pass { background: var(--green-bg); } .grid tr.result td.fail { background: var(--red-bg); }
+    .grid tr.gap td { height: 14px; border: 0; }
     .grid .vdot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
     .grid .vdot.g { background: var(--green); } .grid .vdot.r { background: var(--red); opacity: .7; }
 
@@ -372,6 +373,7 @@
             const size = quest.proposals.at(-1).team.length;
             rows.push(el("tr", { class: "result" }, el("td", { class: "label" }, "⚔️"),
               el("td", { class: quest.result, colspan: String(view.players.length + 1) }, "✅".repeat(size - quest.fails) + "❌".repeat(quest.fails))));
+            rows.push(el("tr", { class: "gap" }, el("td", { colspan: width })));
           }
         });
         reviewEl.append(score, el("table", { class: "grid" }, el("thead", {}, head), el("tbody", {}, rows)));
