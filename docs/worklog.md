@@ -4,8 +4,8 @@ History of the project: what was decided, when, and why; what's deferred; what's
 
 ## Status
 
-- 2026-10-16: All three specs approved (`game-model`, `capture`, `review`).
-- Next: plan → tasks → build (`game-model` first).
+- 2026-10-16: All three specs approved. Process changed for the screens (see decisions): prototype-driven from here.
+- Next: build `game-model` test-first → rough `index.html` → iterate on the phone over local Wi-Fi.
 
 ## Decisions
 
@@ -26,7 +26,8 @@ History of the project: what was decided, when, and why; what's deferred; what's
 | 2026-10-16 | Game state is an append-only event log; everything else is derived by replaying it. | Undo is "drop the last event"; save/export is "the log"; an AI core can feed the same events taps do. |
 | 2026-10-16 | Undo is unlimited in the model. Correcting history is undo-only (no editing a past event in place). | Simple and sufficient; in-place edit is a TODO we probably won't need. |
 | 2026-10-16 | Vote entry uses presets, then individual taps to adjust. Order and default: **All reject** (default) → Team approves → All approve; a horizontal swipe on the chips cycles through them. | Fast at the table; most votes are close to one of the presets. |
-| 2026-10-16 | Screens flip by bottom tabs only; swipe is reserved for vote presets. | Avoids two meanings for one gesture. |
+| 2026-10-16 | ~~Screens flip by bottom tabs only; swipe is reserved for vote presets.~~ Reversed the same day: **swipe flips screens**; vote presets start as buttons and the gesture is decided in the prototype. | Preset cycling is a rotation (approve → reject again), and flipping is the more natural use of a swipe. Needs to be felt, not read. |
+| 2026-10-16 | SDD stays for `game-model`; `capture` and `review` switch to prototype-driven iteration on the phone over local Wi-Fi. Their specs become living notes. | Layout and gestures can't be approved from ASCII mocks. |
 | 2026-10-16 | Setup shows ten name fields (we usually play with 10); blank fields are empty seats. | Fewest taps for the common case. |
 | 2026-10-16 | Review grid: players as columns, proposals as rows, team shown as a shaded band per row, quest result rows inside the same grid. | Votes, team and result read together in one place. |
 

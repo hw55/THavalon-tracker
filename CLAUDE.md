@@ -31,7 +31,8 @@ Three modules, built in this order:
 Working assumptions:
 - Plain HTML/CSS/JS, no framework, no build step.
 - Setup captures names in clockwise seating order and the first king; kingship rotates clockwise.
-- Votes are per-player approve/reject taps; majority approves. The 5th proposal is the hammer: no vote, the team goes.
+- Votes are per-player approve/reject taps with presets (All reject default → Team → All approve); majority approves. The 5th proposal is the hammer: no vote, the team goes.
+- Horizontal swipe flips between the two screens. The vote-preset gesture is undecided until it can be felt in the prototype; start with buttons.
 - Quest result is entered as the number of fail cards; the app decides pass/fail.
 - Game end (3 passed / 3 failed quests) is detected and shown; assassination isn't modelled.
 - One game at a time, saved in localStorage so a refresh doesn't lose it.
@@ -41,7 +42,12 @@ Files: `index.html` (both screens), `game.js` (the model), `tests.js` + `tests.h
 
 ## Process
 
-Spec-driven development: requirements → capability map → spec per module (with ASCII mocks of the screens) → plan → tasks → build. Specs live in `docs/spec/`. Don't write app code before the spec covers it.
+Split by module, because rules can be verified by reading but screens only by using:
+
+- **`game-model`:** spec-driven, test-first. `docs/spec/SPEC-game-model.md` is the contract; change the spec before changing a rule.
+- **`capture` and `review`:** prototype-driven. Build rough, run it on the phone, iterate on feel. Their specs in `docs/spec/` are living notes updated *after* each round, not approvals sought in advance.
+
+Local iteration loop: `python3 -m http.server 8000` in the repo, open `http://<mac-ip>:8000` on the phone over Wi-Fi.
 
 ## Repository layout
 
