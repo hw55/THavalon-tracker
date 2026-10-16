@@ -328,8 +328,8 @@
             onclick: () => { ui.fails = n; renderCapture(view); } }, "✅".repeat(size - n) + "❌".repeat(n));
         });
         return el("div", {},
-          el("h2", {}, `⚔️ ${proposal.team.map((i) => "🛡️ " + view.players[i]).join("  ")}`),
           el("div", { class: "fails" }, rows),
+          el("h2", {}, `⚔️ ${proposal.team.map((i) => "🛡️ " + view.players[i]).join("  ")}`),
           el("button", { class: "btn primary", disabled: ui.fails === null, onclick: () => tryAppend({ type: "quest", fails: ui.fails }) }, "⚔️ Record quest"));
       }
 
