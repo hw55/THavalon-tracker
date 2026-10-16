@@ -19,12 +19,13 @@
 
     header { display: flex; justify-content: space-between; align-items: center; padding: .6rem 1rem; border-bottom: 1px solid var(--line); }
     header h1 { font-size: 1.1rem; margin: 0; }
-    header .actions { display: flex; gap: .5rem; }
+    header .actions { display: flex; gap: .3rem; }
+    header h1 { font-size: 1.5rem; }
     .btn { min-height: 44px; padding: 0 1rem; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); }
     .btn.primary { background: var(--accent); border-color: var(--accent); font-weight: 600; width: 100%; margin-top: 1rem; }
     .btn:disabled { opacity: .35; }
     .btn.small { min-height: 36px; padding: 0 .7rem; font-size: .9rem; }
-    .btn.icon { min-width: 48px; min-height: 44px; font-size: 1.5rem; padding: 0 .5rem; }
+    .btn.icon { min-width: 44px; min-height: 44px; font-size: 1.4rem; padding: 0 .35rem; }
 
     #context { padding: .5rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); font-size: .95rem; display: flex; justify-content: space-between; }
     #context:empty { display: none; }
@@ -113,8 +114,11 @@
 <body>
   <div id="app">
     <header>
-      <h1>Thavalon</h1>
+      <h1>🏰</h1>
       <div class="actions">
+        <button id="save" class="btn small icon" title="Save game to a file">💾</button>
+        <button id="load" class="btn small icon" title="Load a saved game">📂</button>
+        <input id="load-file" type="file" accept=".json,application/json" hidden>
         <button id="reload" class="btn small icon" title="Reload app">🔄</button>
         <button id="new-game" class="btn small icon" title="New game">🗑️</button>
         <button id="undo" class="btn small icon" title="Back one step">↩️</button>
@@ -200,6 +204,7 @@
         renderCapture(view);
         renderReview(view);
         undoBtn.disabled = events.length === 0;
+        $("#save").disabled = events.length === 0;
       }
 
       function renderContext(view) {
@@ -410,6 +415,41 @@
         showTab("capture");
       }
       $("#new-game").addEventListener("click", newGame);
+
+      // Save: the event log is the save file. Phones that can share files get the share sheet
+      // (Files, Drive, Messages…); otherwise the browser downloads it.
+      async function saveGame() {
+        if (!events.length) return;
+        const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+        const name = `thavalon-${stamp}.json`;
+        const file = new File([Game.serialize(events)], name, { type: "application/json" });
+        if (navigator.canShare?.({ files: [file] })) {
+          try { await navigator.share({ files: [file] }); return; }
+          catch (error) { if (error.name === "AbortError") return; }
+        }
+        const url = URL.createObjectURL(file);
+        const link = el("a", { href: url, download: name });
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      $("#save").addEventListener("click", saveGame);
+
+      // Load: pick a saved file; the model validates every event before it replaces the current game.
+      const loadFile = $("#load-file");
+      $("#load").addEventListener("click", () => loadFile.click());
+      loadFile.addEventListener("change", async () => {
+        const file = loadFile.files[0];
+        loadFile.value = "";
+        if (!file) return;
+        let loaded;
+        try { loaded = Game.deserialize(await file.text()); }
+        catch (error) { alert(`Can't load that file: ${error.message}`); return; }
+        if (events.length && !confirm("Replace the current game with the loaded one?")) return;
+        commit(loaded);
+        showTab("review");
+      });
 
       // Reload to pick up a new version of the app. The game is autosaved, so nothing is lost.
       let reloading = false;
