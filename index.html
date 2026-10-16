@@ -359,7 +359,12 @@
             const tr = el("tr", { class: pi === 0 ? "quest-start" : "" }, el("td", { class: "label" }, pi === 0 ? String(quest.number) : ""));
             view.players.forEach((_, i) => {
               let text = "·", cls = "pending";
-              if (p.approvals !== null) { const yes = p.approvals.includes(i); text = yes ? "🟢" : "🔴"; cls = yes ? "yes" : "no"; }
+              if (p.approvals !== null) {
+                // Votes against expectation get their own icon: 🐍 approved a team they're not on, 🍎 rejected their own team.
+                const yes = p.approvals.includes(i), onTeam = p.team.includes(i);
+                text = yes ? (onTeam ? "🟢" : "🐍") : (onTeam ? "🍎" : "🔴");
+                cls = yes ? "yes" : "no";
+              }
               else if (hammer) { text = ""; cls = ""; }
               const td = el("td", { class: `${cls} ${p.team.includes(i) ? "team" : ""}` }, text);
               if (p.king === i) td.append(el("span", { class: "crown" }, "👑"));
