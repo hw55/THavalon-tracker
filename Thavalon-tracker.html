@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thavalon Match Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css">
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 15% 0%, rgba(125, 83, 210, .16), transparent 34rem),
+        radial-gradient(circle at 85% 10%, rgba(43, 111, 147, .13), transparent 30rem),
+        #09090b;
+    }
+
+    .quest-table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .quest-table th,
+    .quest-table td {
+      border-bottom: 1px solid rgba(255, 255, 255, .08);
+    }
+
+    .quest-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .round-row.vote-passed td {
+      background: rgba(34, 197, 94, .075);
+      color: #f0fdf4;
+      font-weight: 700;
+    }
+
+    .vote-badge {
+      min-width: 5.35rem;
+      transition: transform .15s ease, background-color .15s ease, border-color .15s ease;
+    }
+
+    .vote-badge:hover {
+      transform: translateY(-1px);
+    }
+
+    .team-player {
+      cursor: pointer;
+      transition: transform .15s ease, opacity .15s ease;
+    }
+
+    .team-player:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
+
+    .team-player:disabled {
+      cursor: not-allowed;
+    }
+
+    .badge.badge-outline.badge-info {
+      border-color: transparent;
+      background-color: rgba(14, 165, 233, .16);
+      color: #7dd3fc;
+      font-weight: 400;
+      letter-spacing: normal;
+      box-shadow: none;
+      opacity: .82;
+    }
+
+    .badge.badge-outline.badge-info:not(:disabled) {
+      border-radius: .5rem;
+    }
+
+    .badge.badge-outline.badge-info:hover {
+      background-color: rgba(14, 165, 233, .24);
+      opacity: 1;
+    }
+
+    .vote-badge {
+      position: relative;
+    }
+
+    .leader-marker {
+      display: none;
+      margin-left: .35rem;
+      font-size: .9rem;
+      line-height: 1;
+    }
+
+    .vote-badge.leader-vote .leader-marker {
+      display: inline-block;
+    }
+
+    @media (max-width: 900px) {
+      .quest-table {
+        display: block;
+        min-width: 0;
+      }
+
+      .quest-table thead {
+        display: none;
+      }
+
+      .quest-table tbody,
+      .quest-table tr,
+      .quest-table td {
+        display: block;
+        width: 100%;
+      }
+
+      .quest-table tr {
+        margin: .75rem;
+        width: calc(100% - 1.5rem);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, .08);
+        border-radius: .75rem;
+        background: rgba(255, 255, 255, .025);
+      }
+
+      .quest-table td {
+        min-width: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, .08);
+        padding: .75rem 1rem;
+      }
+
+      .quest-table td:last-child {
+        border-bottom: 0;
+      }
+
+      .quest-table td::before {
+        display: block;
+        margin-bottom: .35rem;
+        color: oklch(var(--bc) / .55);
+        content: attr(data-label);
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-base-content">
+  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <header class="mb-8 flex flex-col gap-4 border-b border-base-content/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 class="text-4xl font-black tracking-tight sm:text-5xl">Thavalon Tracker</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="new-match" type="button" class="btn btn-sm btn-outline btn-secondary">Start New Match</button>
+        <div id="session-status" class="badge badge-lg badge-outline border-base-content/20 px-4 py-4 text-xs font-semibold uppercase tracking-wider">
+          Setup mode
+        </div>
+      </div>
+    </header>
+
+    <section id="setup-panel" class="card mb-8 border border-base-content/10 bg-base-200/65 shadow-2xl">
+      <div class="card-body">
+        <div class="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+          <div>
+            <h2 class="card-title text-2xl">Player name setup</h2>
+            <p class="text-sm text-base-content/60">Enter 5–10 names. Names are trimmed, de-duplicated, and sorted A–Z when locked.</p>
+          </div>
+          <span id="player-count" class="text-sm font-semibold text-primary">0 / 10 names</span>
+        </div>
+        <div id="name-grid" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"></div>
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button id="lock-names" class="btn btn-primary sm:w-auto">Lock Names &amp; Start Tracker</button>
+          <p id="setup-message" class="text-sm text-error" role="alert"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="tracker-panel" class="hidden">
+      <div id="locked-players" class="mb-4 flex flex-wrap gap-2 sm:justify-end"></div>
+      <div id="quest-stack" class="space-y-5"></div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const MAX_PLAYERS = 10;
+      const QUESTS = 5;
+      const ROUNDS = 5;
+      const STORAGE_KEY = "thavalon-tracker-state";
+      const TEAM_SIZES = {
+        5: [2, 3, 2, 3, 3],
+        6: [2, 3, 4, 3, 4],
+        7: [2, 3, 3, 4, 4],
+        8: [3, 4, 4, 5, 5],
+        9: [3, 4, 4, 5, 5],
+        10: [3, 4, 4, 5, 5]
+      };
+
+      const nameGrid = document.querySelector("#name-grid");
+      const playerCount = document.querySelector("#player-count");
+      const lockButton = document.querySelector("#lock-names");
+      const setupMessage = document.querySelector("#setup-message");
+      const setupPanel = document.querySelector("#setup-panel");
+      const trackerPanel = document.querySelector("#tracker-panel");
+      const sessionStatus = document.querySelector("#session-status");
+      const newMatchButton = document.querySelector("#new-match");
+      const questStack = document.querySelector("#quest-stack");
+      const lockedPlayers = document.querySelector("#locked-players");
+      let players = [];
+
+      function createNameInputs() {
+        for (let index = 0; index < MAX_PLAYERS; index += 1) {
+          const label = document.createElement("label");
+          label.className = "form-control";
+          label.innerHTML = `
+            <span class="label-text text-xs font-semibold uppercase tracking-wider text-base-content/55">Player ${index + 1}</span>
+            <input class="player-name input input-bordered w-full bg-base-300/70" maxlength="40"
+              placeholder="Enter name" aria-label="Player ${index + 1}">
+          `;
+          label.querySelector("input").addEventListener("input", updatePlayerCount);
+          nameGrid.append(label);
+        }
+        updatePlayerCount();
+      }
+
+      function updatePlayerCount() {
+        const count = [...nameGrid.querySelectorAll("input")].filter((input) => input.value.trim()).length;
+        playerCount.textContent = `${count} / ${MAX_PLAYERS} names`;
+      }
+
+      function cleanNames() {
+        return [...nameGrid.querySelectorAll("input")]
+          .map((input) => input.value.trim().replace(/\s+/g, " "))
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+      }
+
+      function escapeHtml(value) {
+        return value.replace(/[&<>"']/g, (character) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+        }[character]));
+      }
+
+      function renderPlayers() {
+        lockedPlayers.innerHTML = players.map((player, index) =>
+          `<span class="badge badge-ghost gap-1 py-3"><span class="opacity-50">${String(index + 1).padStart(2, "0")}</span>${escapeHtml(player)}</span>`
+        ).join("");
+      }
+
+      function renderTracker(roundCounts = [1], savedRounds = {}, questStatuses = {}) {
+        const sizes = TEAM_SIZES[players.length];
+        questStack.innerHTML = "";
+        roundCounts.forEach((roundCount, index) => {
+          questStack.append(createQuestSection(index + 1, sizes, roundCount, savedRounds, questStatuses[index + 1]));
+        });
+        for (let quest = questStack.children.length; quest < QUESTS; quest += 1) {
+          const previousStatus = questStatuses[quest];
+          if (previousStatus !== "pass" && previousStatus !== "fail") break;
+          questStack.append(createQuestSection(quest + 1, sizes, roundCounts[quest] || 1, savedRounds, questStatuses[quest + 1]));
+        }
+      }
+
+      function createQuestSection(quest, sizes, roundCount = 1, savedRounds = {}, savedStatus = "pending") {
+        const questSection = document.createElement("section");
+        questSection.className = "quest-section overflow-visible rounded-2xl border border-base-content/10 bg-base-200/60 shadow-xl";
+        questSection.dataset.quest = quest;
+        questSection.innerHTML = `
+            <div class="quest-heading flex flex-col gap-3 border-b border-base-content/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 class="text-xl font-bold">Quest ${quest}</h3>
+                <span class="text-sm text-base-content/55">Team size: <strong class="text-base-content">${sizes[quest - 1]}</strong>${quest === 4 && players.length >= 7 ? " · requires 2 fails to fail" : ""}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <select class="quest-status select select-sm select-bordered" aria-label="Quest ${quest} result">
+                  <option value="pending">On Going</option>
+                  <option value="pass">Pass</option>
+                  <option value="fail">Fail</option>
+                </select>
+                <button type="button" class="add-round btn btn-sm btn-outline btn-primary">+ Add Round</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="quest-table w-full text-left">
+                <thead>
+                  <tr class="text-xs uppercase tracking-wider text-base-content/55">
+                    <th class="w-28 px-5 py-3">Quest ${quest}</th>
+                    <th class="min-w-[12rem] px-5 py-3">Team Leader</th>
+                    <th class="min-w-[22rem] px-5 py-3">Team<span class="normal-case font-normal opacity-70">(team size ${sizes[quest - 1]})</span></th>
+                    <th class="min-w-[26rem] px-5 py-3">Votes</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          `;
+        const body = questSection.querySelector("tbody");
+        const addRound = questSection.querySelector(".add-round");
+        const questStatus = questSection.querySelector(".quest-status");
+        questStatus.value = savedStatus;
+        updateQuestStatusStyle();
+        for (let round = 1; round <= roundCount; round += 1) {
+          body.append(createRoundRow(quest, round, sizes[quest - 1], savedRounds[`${quest}-${round}`]));
+        }
+        updateAddRoundState();
+        addRound.addEventListener("click", () => {
+          const nextRound = body.children.length + 1;
+          if (nextRound <= ROUNDS) {
+            body.append(createRoundRow(quest, nextRound, sizes[quest - 1]));
+          }
+          if (body.children.length >= ROUNDS) {
+            addRound.disabled = true;
+            addRound.classList.remove("btn-primary");
+            addRound.classList.add("btn-disabled");
+            if (quest < QUESTS && !questStack.querySelector(`[data-quest="${quest + 1}"]`)) {
+              questStack.append(createQuestSection(quest + 1, sizes));
+            }
+          }
+          saveState();
+        });
+        questStatus.addEventListener("change", () => {
+          updateQuestStatusStyle();
+          if ((questStatus.value === "pass" || questStatus.value === "fail") && quest < QUESTS &&
+              !questStack.querySelector(`section[data-quest="${quest + 1}"]`)) {
+            questStack.append(createQuestSection(quest + 1, sizes));
+          }
+          saveState();
+        });
+
+        function updateQuestStatusStyle() {
+          questSection.classList.remove("border-success/30", "border-error/30");
+          questSection.classList.toggle("border-success/30", questStatus.value === "pass");
+          questSection.classList.toggle("border-error/30", questStatus.value === "fail");
+          questSection.querySelector(".quest-heading").classList.remove("bg-success/10", "bg-error/10");
+          questSection.querySelector(".quest-heading").classList.toggle("bg-success/10", questStatus.value === "pass");
+          questSection.querySelector(".quest-heading").classList.toggle("bg-error/10", questStatus.value === "fail");
+        }
+
+        function updateAddRoundState() {
+          const hasPassedRound = [...body.querySelectorAll(".round-row")].some((roundRow) =>
+            roundRow.classList.contains("vote-passed")
+          );
+          const shouldDisable = body.children.length >= ROUNDS || hasPassedRound;
+          addRound.disabled = shouldDisable;
+          addRound.classList.toggle("btn-primary", !shouldDisable);
+          addRound.classList.toggle("btn-disabled", shouldDisable);
+        }
+        questSection.updateAddRoundState = updateAddRoundState;
+        return questSection;
+      }
+
+      function createRoundRow(quest, round, teamSize, savedRound = {}) {
+        const row = document.createElement("tr");
+        row.className = "round-row align-top";
+        row.dataset.quest = quest;
+        row.dataset.round = round;
+        row.innerHTML = `
+          <td class="px-5 py-4" data-label="Round">
+            <span class="font-mono text-sm text-base-content/70">Round ${round}</span>
+          </td>
+          <td class="px-5 py-4" data-label="Team Leader">
+            <div class="team-leader-control">
+              <select class="team-leader select select-sm select-bordered w-full" aria-label="Team leader for Round ${round}">
+                <option value="">Choose player</option>
+                ${players.map((player) => `<option value="${escapeHtml(player)}">${escapeHtml(player)}</option>`).join("")}
+              </select>
+              <button type="button" class="selected-team-leader badge badge-secondary hidden cursor-pointer py-3" title="Click to change team leader"></button>
+            </div>
+          </td>
+          <td class="px-5 py-4" data-label="Team">
+            <div>
+              <div class="mb-2 flex items-center justify-between gap-2">
+                <span class="text-xs text-base-content/55"><span class="selected-count">0</span> / ${teamSize} selected</span>
+              </div>
+              <div class="team-player-buttons flex flex-col gap-2">
+                <div class="selected-team-players flex flex-wrap gap-2"></div>
+                <div class="available-team-players flex flex-wrap gap-2"></div>
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-4" data-label="Votes">
+            ${round === 5
+              ? '<div class="text-center text-3xl" aria-label="Team goes on quest" title="Team goes on quest">🔨</div>'
+              : `<div class="vote-summary mb-2 text-xs font-semibold text-base-content/55">0 approve · ${players.length} reject · Vote fails</div>
+                 <div class="vote-badges flex flex-col gap-2">
+                   <div class="approved-votes flex flex-wrap gap-2"></div>
+                   <div class="rejected-votes flex flex-wrap gap-2"></div>
+                 </div>`}
+          </td>
+        `;
+
+        const playerButtons = row.querySelector(".team-player-buttons");
+        const teamLeader = row.querySelector(".team-leader");
+        const selectedTeamLeader = row.querySelector(".selected-team-leader");
+        const selectedTeamPlayers = row.querySelector(".selected-team-players");
+        const availableTeamPlayers = row.querySelector(".available-team-players");
+        const selectedCount = row.querySelector(".selected-count");
+        const voteBadges = row.querySelector(".vote-badges");
+        const approvedVotes = row.querySelector(".approved-votes");
+        const rejectedVotes = row.querySelector(".rejected-votes");
+        const voteSummary = row.querySelector(".vote-summary");
+        const selected = new Set();
+
+        function updatePicker() {
+          selectedCount.textContent = selected.size;
+          const buttons = [...playerButtons.querySelectorAll("[data-team-player]")];
+          buttons
+            .sort((a, b) => {
+              return Number(a.dataset.playerIndex) - Number(b.dataset.playerIndex);
+            })
+            .forEach((button) => {
+              (selected.has(button.dataset.player) ? selectedTeamPlayers : availableTeamPlayers).append(button);
+            });
+          buttons.forEach((button) => {
+            const isSelected = selected.has(button.dataset.player);
+            button.classList.toggle("badge-info", isSelected);
+            button.classList.toggle("badge-outline", !isSelected);
+            button.classList.toggle("opacity-40", !isSelected && selected.size >= teamSize);
+            button.setAttribute("aria-pressed", String(isSelected));
+            button.disabled = !isSelected && selected.size >= teamSize;
+          });
+          updateVoteAffiliations();
+        }
+
+        function updateVoteAffiliations() {
+          if (!voteBadges) return;
+          voteBadges.querySelectorAll(".vote-badge").forEach((badge) => {
+            const isOffTeam = !selected.has(badge.dataset.player);
+            const isTeamLeader = teamLeader.value === badge.dataset.player;
+            const isDissentingVote = (isOffTeam && badge.dataset.approved === "1") ||
+              (!isOffTeam && badge.dataset.approved === "0");
+            badge.classList.toggle("ring-2", isDissentingVote);
+            badge.classList.toggle("ring-warning", isDissentingVote);
+            badge.classList.toggle("leader-vote", isTeamLeader);
+            const voteLabels = [];
+            if (isTeamLeader) voteLabels.push("Team Leader");
+            if (isOffTeam && badge.dataset.approved === "1") voteLabels.push("Off Approval");
+            if (!isOffTeam && badge.dataset.approved === "0") voteLabels.push("On Reject");
+            badge.title = voteLabels.join(" · ");
+          });
+        }
+
+        function sortVotes() {
+          if (!voteBadges) return;
+          const badges = [...voteBadges.querySelectorAll(".vote-badge")];
+          approvedVotes.innerHTML = "";
+          rejectedVotes.innerHTML = "";
+          badges
+            .sort((a, b) => Number(a.dataset.playerIndex) - Number(b.dataset.playerIndex))
+            .forEach((badge) => {
+              (badge.dataset.approved === "1" ? approvedVotes : rejectedVotes).append(badge);
+            });
+        }
+
+        function updateVoteResult() {
+          if (!voteBadges || !voteSummary) return;
+          const approved = voteBadges.querySelectorAll('.vote-badge[data-approved="1"]').length;
+          const majority = Math.floor(players.length / 2) + 1;
+          const passed = approved >= majority;
+          voteSummary.textContent = `${approved} approve · ${players.length - approved} reject · Vote ${passed ? "passes" : "fails"}`;
+          row.classList.toggle("vote-passed", passed);
+          const questSection = row.closest("section[data-quest]");
+          questSection?.updateAddRoundState?.();
+          sortVotes();
+          updateVoteAffiliations();
+        }
+
+        players.forEach((player) => {
+          const teamButton = document.createElement("button");
+          teamButton.type = "button";
+          teamButton.className = "team-player badge badge-outline badge-info justify-start py-3 font-normal";
+          teamButton.dataset.teamPlayer = "true";
+          teamButton.dataset.player = player;
+          teamButton.dataset.playerIndex = String(players.indexOf(player));
+          teamButton.textContent = player;
+          teamButton.setAttribute("aria-pressed", "false");
+          teamButton.addEventListener("click", () => {
+            if (selected.has(player)) {
+              selected.delete(player);
+            } else if (selected.size < teamSize) {
+              selected.add(player);
+            }
+            updatePicker();
+            saveState();
+          });
+          playerButtons.append(teamButton);
+
+          if (round === 5) return;
+          const badge = document.createElement("button");
+          badge.type = "button";
+          badge.className = "vote-badge badge badge-error cursor-pointer justify-center py-3 font-semibold";
+          badge.dataset.approved = "0";
+          badge.dataset.playerIndex = String(players.indexOf(player));
+          badge.dataset.player = player;
+          const leaderMarker = document.createElement("span");
+          leaderMarker.className = "leader-marker";
+          leaderMarker.textContent = "👑";
+          leaderMarker.setAttribute("aria-hidden", "true");
+          badge.append(leaderMarker);
+          badge.append(document.createTextNode(player));
+          badge.title = "Reject — click to approve";
+          badge.addEventListener("click", () => {
+            const approved = badge.dataset.approved === "1";
+            badge.dataset.approved = approved ? "0" : "1";
+            badge.classList.toggle("badge-success", !approved);
+            badge.classList.toggle("badge-error", approved);
+            badge.title = approved ? "Reject — click to approve" : "Approve — click to reject";
+            updateVoteResult();
+            saveState();
+          });
+          voteBadges.append(badge);
+        });
+
+        updatePicker();
+        updateVoteResult();
+        function updateTeamLeader() {
+          const hasLeader = Boolean(teamLeader.value);
+          teamLeader.classList.toggle("hidden", hasLeader);
+          selectedTeamLeader.classList.toggle("hidden", !hasLeader);
+          selectedTeamLeader.textContent = hasLeader ? teamLeader.value : "";
+        }
+
+        teamLeader.addEventListener("change", () => {
+          updateTeamLeader();
+          updateVoteAffiliations();
+          saveState();
+        });
+        selectedTeamLeader.addEventListener("click", () => {
+          teamLeader.value = "";
+          updateTeamLeader();
+          updateVoteAffiliations();
+          saveState();
+        });
+
+        row.getRoundState = () => ({
+          leader: teamLeader.value,
+          team: [...selected],
+          approved: voteBadges
+            ? [...voteBadges.querySelectorAll('.vote-badge[data-approved="1"]')].map((badge) => badge.dataset.player)
+            : []
+        });
+        if (players.includes(savedRound.leader)) teamLeader.value = savedRound.leader;
+        updateTeamLeader();
+        savedRound.team?.forEach((player) => {
+          if (players.includes(player) && selected.size < teamSize) selected.add(player);
+        });
+        savedRound.approved?.forEach((player) => {
+          const badge = [...voteBadges.querySelectorAll(".vote-badge")].find((item) => item.dataset.player === player);
+          if (badge) {
+            badge.dataset.approved = "1";
+            badge.classList.replace("badge-error", "badge-success");
+            badge.title = "Approve — click to reject";
+          }
+        });
+        updatePicker();
+        updateVoteResult();
+        return row;
+      }
+
+      function saveState() {
+        const state = {
+          players,
+          roundCounts: [...questStack.querySelectorAll("section[data-quest]")].map((section) => section.querySelector("tbody").children.length),
+          questStatuses: Object.fromEntries([...questStack.querySelectorAll("section[data-quest]")].map((section) => [
+            section.dataset.quest, section.querySelector(".quest-status").value
+          ])),
+          rounds: Object.fromEntries([...questStack.querySelectorAll(".round-row")].map((row) => [
+            `${row.dataset.quest}-${row.dataset.round}`, row.getRoundState()
+          ]))
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      function restoreState() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return;
+        const state = JSON.parse(saved);
+        if (!Array.isArray(state.players) || state.players.length < 5 || !TEAM_SIZES[state.players.length]) return;
+        players = state.players;
+        renderPlayers();
+        renderTracker(state.roundCounts, state.rounds, state.questStatuses);
+        setupPanel.classList.add("hidden");
+        trackerPanel.classList.remove("hidden");
+        sessionStatus.textContent = `${players.length} players`;
+        sessionStatus.classList.remove("badge-outline");
+        sessionStatus.classList.add("badge-success");
+      }
+
+      lockButton.addEventListener("click", () => {
+        const cleanedNames = cleanNames();
+        const normalized = cleanedNames.map((name) => name.toLocaleLowerCase());
+        const hasDuplicates = new Set(normalized).size !== normalized.length;
+        if (cleanedNames.length < 5 || cleanedNames.length > MAX_PLAYERS) {
+          setupMessage.textContent = "Enter between 5 and 10 player names to start.";
+          return;
+        }
+        if (hasDuplicates) {
+          setupMessage.textContent = "Each player needs a unique name.";
+          return;
+        }
+        players = cleanedNames;
+        players = cleanedNames;
+        setupMessage.textContent = "";
+        renderPlayers();
+        renderTracker();
+        saveState();
+        setupPanel.classList.add("hidden");
+        trackerPanel.classList.remove("hidden");
+        sessionStatus.textContent = `${players.length} players`;
+        sessionStatus.classList.remove("badge-outline");
+        sessionStatus.classList.add("badge-success");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+
+      newMatchButton.addEventListener("click", () => {
+        if (players.length && !window.confirm("Clear this match and start a new one?")) return;
+        localStorage.removeItem(STORAGE_KEY);
+        window.location.reload();
+      });
+
+      createNameInputs();
+      restoreState();
+    })();
+  </script>
+</body>
+</html>
