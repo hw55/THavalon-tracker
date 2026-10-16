@@ -1,6 +1,6 @@
 # Spec: game-model
 
-Module id: `game-model` (see the capability map in [CLAUDE.md](../../CLAUDE.md)). Status: **draft, awaiting review** (2026-10-16).
+Module id: `game-model` (see the capability map in [CLAUDE.md](../../CLAUDE.md)). Status: **approved** (2026-10-16), open questions resolved below.
 
 ## Objective
 
@@ -156,8 +156,8 @@ Conventions: `const` everywhere; double quotes; 2-space indent; small named func
 - `replay` of a 30-event log takes well under a millisecond (no need to measure unless it's visibly slow).
 - `capture` and `review` can be written without reading `game.js` internals: the derived view and the API above are enough.
 
-## Open questions
+## Resolved questions (2026-10-16)
 
-1. **Undo depth:** unlimited (pop any number of events) or only the last entry? Proposed: unlimited; the UI can choose to expose one step.
-2. **Editing history:** should the model support correcting an earlier event (e.g. fixing quest 2's fail count after quest 3 started)? Proposed: no for now; undo back to it and re-enter. Revisit when `capture` mocks show how painful that is.
-3. **Vote default:** the `vote` event records approvals; does the UI default everyone to reject (as the old tracker did) or require each player to be tapped one way? That's a `capture` question, but it decides whether a "nobody tapped" vote is meaningful. Proposed: model doesn't care; the UI decides.
+1. **Undo depth:** unlimited in the model. The UI decides how much to expose.
+2. **Editing history:** undo-only. Editing a past event without undoing everything after it is on the TODO list, expected not to be needed.
+3. **Vote entry:** the model just records approvals. The UI offers quick presets (all approve, all reject, team approves only) that are then adjusted by tapping individuals; see `SPEC-capture.md`.

@@ -4,8 +4,8 @@ History of the project: what was decided, when, and why; what's deferred; what's
 
 ## Status
 
-- 2026-10-16: Requirements confirmed. Capability map and design assumptions approved. `SPEC-game-model.md` drafted, awaiting review.
-- Next: approve game-model spec → `capture` and `review` specs with mocks → plan → build.
+- 2026-10-16: All three specs approved (`game-model`, `capture`, `review`).
+- Next: plan → tasks → build (`game-model` first).
 
 ## Decisions
 
@@ -24,18 +24,24 @@ History of the project: what was decided, when, and why; what's deferred; what's
 | 2026-10-16 | Single HTML file with no build step is a preference, not a hard rule. | Easy to share; revisit if it gets in the way. |
 | 2026-10-16 | Capability map (`game-model` → `capture` → `review`) and all working assumptions in CLAUDE.md approved, incl. GitHub Pages hosting and the `index.html` / `game.js` / `tests.*` layout. | Pure model is testable without clicking and gives the future AI-core integration a clean target. |
 | 2026-10-16 | Game state is an append-only event log; everything else is derived by replaying it. | Undo is "drop the last event"; save/export is "the log"; an AI core can feed the same events taps do. |
+| 2026-10-16 | Undo is unlimited in the model. Correcting history is undo-only (no editing a past event in place). | Simple and sufficient; in-place edit is a TODO we probably won't need. |
+| 2026-10-16 | Vote entry uses presets, then individual taps to adjust. Order and default: **All reject** (default) → Team approves → All approve; a horizontal swipe on the chips cycles through them. | Fast at the table; most votes are close to one of the presets. |
+| 2026-10-16 | Screens flip by bottom tabs only; swipe is reserved for vote presets. | Avoids two meanings for one gesture. |
+| 2026-10-16 | Setup shows ten name fields (we usually play with 10); blank fields are empty seats. | Fewest taps for the common case. |
+| 2026-10-16 | Review grid: players as columns, proposals as rows, team shown as a shaded band per row, quest result rows inside the same grid. | Votes, team and result read together in one place. |
 
 ## TODO (future)
 
 - Reverse cards (and the rest of the Thavalon role rules: Agravaine declarations, other roles).
 - Assassination at game end.
 - A way to save / export an entered game (votes etc.), beyond the in-browser autosave.
+- Editing a past event in place without undoing everything after it. (Probably not needed.)
+- Review: tap a player's initial to highlight their column across all quests.
 - Voice / "AI core on Android" integration that listens to the table and understands game state.
 - Learning the full Thavalon rulebook.
 
 ## Open questions
 
-- What the history screen must show at minimum (per-player vote grid? quest timeline? both?). To settle during the `review` spec with mocks.
 - Whether the old tracker's saved-game format needs to load in the new app. (Assumed: no.)
 
 ## Log
@@ -43,3 +49,4 @@ History of the project: what was decided, when, and why; what's deferred; what's
 - 2026-10-16: Project set up on GitHub under the hw55 account (`hw55/THavalon-tracker`), public, empty. Local repo linked; nothing pushed yet.
 - 2026-10-16: Interview run. User's requirements: (1) portrait mobile UI, (2) tap-to-capture, (3) app makes the mechanical decisions, (4) later: hook up to a mobile AI core, (5) two screens, input and visual history. Intent confirmed.
 - 2026-10-16: Old tracker and its CLAUDE.md moved to `archive/`. New CLAUDE.md written. Spec process started: assumptions and capability map proposed and approved. `docs/spec/SPEC-game-model.md` drafted.
+- 2026-10-16: All three specs written with ASCII mocks, questions answered, specs approved.
