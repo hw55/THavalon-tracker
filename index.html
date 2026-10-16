@@ -360,9 +360,9 @@
             view.players.forEach((_, i) => {
               let text = "·", cls = "pending";
               if (p.approvals !== null) {
-                // Votes against expectation get their own icon: 🐍 approved a team they're not on, 🍎 rejected their own team.
+                // Votes against expectation get their own icon: 🐸 approved a team they're not on, 🍎 rejected their own team.
                 const yes = p.approvals.includes(i), onTeam = p.team.includes(i);
-                text = yes ? (onTeam ? "🟢" : "🐍") : (onTeam ? "🍎" : "🔴");
+                text = yes ? (onTeam ? "🟢" : "🐸") : (onTeam ? "🍎" : "🔴");
                 cls = yes ? "yes" : "no";
               }
               else if (hammer) { text = ""; cls = ""; }
