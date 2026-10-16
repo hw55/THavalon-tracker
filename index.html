@@ -24,6 +24,7 @@
     .btn.primary { background: var(--accent); border-color: var(--accent); font-weight: 600; width: 100%; margin-top: 1rem; }
     .btn:disabled { opacity: .35; }
     .btn.small { min-height: 36px; padding: 0 .7rem; font-size: .9rem; }
+    .btn.icon { min-width: 48px; min-height: 44px; font-size: 1.5rem; padding: 0 .5rem; }
 
     #context { padding: .5rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); font-size: .95rem; display: flex; justify-content: space-between; }
     #context:empty { display: none; }
@@ -36,33 +37,44 @@
     .hint { color: var(--muted); font-size: .9rem; margin: .25rem 0 .75rem; }
     .error { color: var(--red); min-height: 1.4em; margin-top: .5rem; }
 
-    .names { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
-    .names label { display: flex; align-items: center; gap: .25rem; }
+    .names { display: flex; flex-direction: column; gap: .4rem; }
+    .names label { display: flex; align-items: center; gap: .4rem; }
+    .names .seat-no { width: 1.4rem; color: var(--muted); font-size: .85rem; text-align: right; }
     .names input { flex: 1; min-width: 0; min-height: 44px; padding: 0 .6rem; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; }
     .names .king-pick { min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); opacity: .45; }
     .names .king-pick.on { opacity: 1; background: var(--accent); border-color: var(--accent); }
 
-    .chips { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
-    .chip { min-height: 48px; padding: 0 .75rem; border-radius: 12px; border: 2px solid var(--line); background: var(--panel);
-      display: flex; align-items: center; gap: .4rem; text-align: left; }
-    .chip .mark { width: 1.2em; font-weight: 700; }
-    .chip.selected { border-color: var(--accent); background: rgba(124, 108, 240, .22); }
-    .chip.dim { opacity: .4; }
-    .chip.approve { border-color: var(--green); background: var(--green-bg); }
-    .chip.approve .mark { color: var(--green); }
-    .chip.reject { border-color: var(--red); background: var(--red-bg); }
-    .chip.reject .mark { color: var(--red); }
-    .chip .team-tag { margin-left: auto; font-size: .7rem; padding: .1rem .4rem; border-radius: 6px; background: var(--team); }
+    /* the table: players around a circle in seating order, info in the middle */
+    .ring { position: relative; width: min(100%, calc(100dvh - 340px)); aspect-ratio: 1; margin: .25rem auto; }
+    .seat { position: absolute; width: 64px; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center;
+      gap: .15rem; background: none; border: 0; padding: 0; }
+    .seat .token { width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--line); background: var(--panel);
+      display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; position: relative; }
+    .seat .name { font-size: .72rem; line-height: 1.1; max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+    .seat .crown { position: absolute; top: -14px; right: -8px; font-size: .95rem; }
+    .seat .shield { position: absolute; bottom: -10px; right: -10px; font-size: 1.05rem; }
+    .seat .hammer-mark { position: absolute; bottom: -10px; left: -10px; font-size: 1rem; }
+    .seat.selected .token { border-color: var(--accent); background: rgba(124, 108, 240, .35); }
+    .seat.selected .name { color: var(--text); }
+    .seat.dim { opacity: .35; }
+    .seat.approve .token { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+    .seat.reject .token { border-color: rgba(248, 81, 73, .45); color: var(--red); }
+    .seat.team .name { color: var(--text); font-weight: 600; }
+    .center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; width: 45%; }
+    .center .big { font-size: 2.2rem; font-weight: 800; line-height: 1; }
+    .center .sub { font-size: .85rem; color: var(--muted); margin-top: .25rem; }
+    .center .pass { color: var(--green); } .center .fail { color: var(--red); }
 
-    .presets { display: flex; gap: .5rem; margin-bottom: .75rem; }
-    .presets .btn { flex: 1; padding: 0 .3rem; font-size: .9rem; }
+    .presets { display: flex; gap: .4rem; justify-content: center; margin-bottom: .25rem; }
+    .presets .btn { min-height: 40px; padding: 0 .8rem; font-size: 1.05rem; }
     .presets .btn.on { border-color: var(--accent); background: rgba(124, 108, 240, .22); }
-    .tally { margin-top: .75rem; font-weight: 600; }
-    .tally.pass { color: var(--green); } .tally.fail { color: var(--red); }
 
-    .fails { display: flex; gap: .5rem; }
-    .fails .btn { flex: 1; min-height: 56px; font-size: 1.3rem; }
-    .fails .btn.on { border-color: var(--accent); background: rgba(124, 108, 240, .22); }
+    .fails { display: flex; flex-direction: column; gap: .4rem; }
+    .fails .btn { min-height: 52px; font-size: 1.4rem; letter-spacing: 3px; border-width: 2px; }
+    .fails .btn.pass { background: rgba(63, 185, 80, .08); }
+    .fails .btn.fail { background: rgba(248, 81, 73, .08); }
+    .fails .btn.on.pass { border-color: var(--green); background: var(--green-bg); }
+    .fails .btn.on.fail { border-color: var(--red); background: var(--red-bg); }
 
     .over { text-align: center; padding-top: 2rem; }
     .over .winner { font-size: 2rem; font-weight: 800; }
@@ -74,18 +86,21 @@
     .score .q b { display: block; font-size: 1.4rem; line-height: 1.2; color: var(--text); }
     .score .q.pass b { color: var(--green); } .score .q.fail b { color: var(--red); } .score .q.now b { color: var(--accent); }
     .score .total { font-weight: 700; font-size: 1.1rem; }
-    .legend { font-size: .8rem; color: var(--muted); margin: 0 .25rem .5rem; }
     table.grid { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: .9rem; }
     .grid th, .grid td { text-align: center; padding: 0; height: 32px; border-bottom: 1px solid var(--line); }
-    .grid th { position: sticky; top: 0; background: var(--bg); font-weight: 600; }
-    .grid td.label, .grid th.label { width: 3.2rem; text-align: left; padding-left: .25rem; color: var(--muted); font-size: .8rem; white-space: nowrap; }
+    .grid th { position: sticky; top: 0; background: var(--bg); font-weight: 600; vertical-align: bottom; padding-bottom: .3rem; }
+    .grid th.vname span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: .75rem; }
+    .grid td.label, .grid th.label { width: 2rem; color: var(--muted); font-size: .8rem; font-weight: 700; }
     .grid td.res, .grid th.res { width: 1.6rem; }
     .grid td.team { background: var(--team); }
-    .grid td.yes { color: var(--green); } .grid td.no { color: var(--red); }
+    .grid td.yes { color: var(--green); } .grid td.no { color: var(--red); opacity: .7; }
+    .grid td.pending { color: var(--muted); }
+    .grid td .crown { font-size: .7rem; vertical-align: super; }
     .grid tr.quest-start td { border-top: 2px solid var(--muted); }
-    .grid td.result { text-align: left; padding-left: .25rem; font-size: .85rem; font-weight: 600; }
-    .grid td.result.pass { color: var(--green); } .grid td.result.fail { color: var(--red); }
-    .grid td.dot { color: var(--muted); }
+    .grid tr.result td { height: 28px; font-size: .85rem; letter-spacing: 1px; }
+    .grid tr.result td.pass { background: var(--green-bg); } .grid tr.result td.fail { background: var(--red-bg); }
+    .grid .vdot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
+    .grid .vdot.g { background: var(--green); } .grid .vdot.r { background: var(--red); opacity: .7; }
 
     nav.tabs { display: flex; border-top: 1px solid var(--line); background: var(--panel); padding-bottom: env(safe-area-inset-bottom); }
     nav.tabs button { flex: 1; min-height: 52px; border: 0; background: none; color: var(--muted); font-weight: 600; }
@@ -97,8 +112,9 @@
     <header>
       <h1>Thavalon</h1>
       <div class="actions">
-        <button id="new-game" class="btn small">New</button>
-        <button id="undo" class="btn small">Undo</button>
+        <button id="reload" class="btn small icon" title="Reload app">🔄</button>
+        <button id="new-game" class="btn small icon" title="New game">🗑️</button>
+        <button id="undo" class="btn small icon" title="Back one step">↩️</button>
       </div>
     </header>
     <div id="context"></div>
@@ -107,8 +123,8 @@
       <section id="review" class="screen review"></section>
     </div>
     <nav class="tabs">
-      <button data-tab="capture" class="on">Capture</button>
-      <button data-tab="review">Review</button>
+      <button data-tab="capture" class="on">✍️ Capture</button>
+      <button data-tab="review">📊 Review</button>
     </nav>
   </div>
 
@@ -123,8 +139,8 @@
       let events = load();
       let ui = freshUi();
       let tab = "capture";
-
-      function freshUi() { return { chosen: new Set(), approvals: new Set(), fails: null, preset: "reject", error: "" }; }
+      function freshUi() { return { chosen: new Set(), approvals: new Set(), fails: null, error: "" }; }
+      ui = { ...ui, ...defaultsFor(Game.replay(events)) };
 
       function load() {
         try {
@@ -134,7 +150,28 @@
       }
       function save() { try { localStorage.setItem(STORAGE_KEY, Game.serialize(events)); } catch (_) {} }
 
-      function commit(next) { events = next; ui = freshUi(); save(); render(); }
+      // Sensible starting selections for a phase: the king usually puts themselves on the team.
+      function defaultsFor(view) {
+        return view.phase === "propose" ? { chosen: new Set([view.king]) } : {};
+      }
+
+      function commit(next, seed = {}) {
+        events = next;
+        ui = { ...freshUi(), ...defaultsFor(Game.replay(events)), ...seed };
+        save();
+        render();
+      }
+
+      // Going back re-opens the previous step with what had been entered, so a mis-tap costs one correction, not a re-entry.
+      function back() {
+        const last = events.at(-1);
+        if (!last) return;
+        const seed = {};
+        if (last.type === "propose") seed.chosen = new Set(last.team);
+        if (last.type === "vote") seed.approvals = new Set(last.approvals);
+        if (last.type === "quest") seed.fails = last.fails;
+        commit(Game.undo(events), seed);
+      }
       function tryAppend(event) {
         try { commit(Game.append(events, event)); }
         catch (error) { ui.error = error.message; renderCapture(); }
@@ -165,9 +202,9 @@
       function renderContext(view) {
         contextEl.replaceChildren();
         if (view.phase === "setup" || view.phase === "over") return;
-        const left = el("span", {}, `Q${view.questNumber} · Proposal ${view.proposalNumber}/5 · Team ${view.teamSize}`);
-        if (view.isHammer) left.append(" · ", el("span", { class: "hammer" }, "HAMMER"));
-        contextEl.append(left, el("span", {}, `King: ${view.players[view.king]} 👑`));
+        const left = el("span", {}, `⚔️ Q${view.questNumber} · 📜 ${view.proposalNumber}/5 · 🛡️ ${view.teamSize}`);
+        if (view.isHammer) left.append(" ", el("span", { class: "hammer" }, "🔨"));
+        contextEl.append(left, el("span", {}, `👑 ${view.players[view.king]}`));
       }
 
       const PANELS = { setup: setupPanel, propose: proposePanel, vote: votePanel, quest: questPanel, over: overPanel };
@@ -184,42 +221,63 @@
           const pick = el("button", { class: "king-pick", type: "button", title: "First king",
             onclick: () => { king = i; kingBtns.forEach((b, j) => b.classList.toggle("on", j === i)); } }, "👑");
           inputs.push(input); kingBtns.push(pick);
-          return el("label", {}, input, pick);
+          return el("label", {}, el("span", { class: "seat-no" }, String(i + 1)), input, pick);
         });
         // Dev convenience: tap the hint to fill ten names.
         const hint = el("p", { class: "hint", onclick: () => {
           ["Ann", "Bob", "Cal", "Dee", "Eve", "Fay", "Gus", "Hal", "Ivy", "Jon"].forEach((n, i) => inputs[i].value = n);
-        } }, "Names in seating order, clockwise. Leave empty seats blank. Tap 👑 for the first king.");
+        } }, "Names clockwise from any seat. Tap 👑 for the first king.");
         const start = el("button", { class: "btn primary", onclick: () => {
           const filled = inputs.map((inp, i) => ({ name: inp.value.trim(), seat: i })).filter((p) => p.name);
           const firstKing = filled.findIndex((p) => p.seat === king);
           if (firstKing < 0) { ui.error = "Tap 👑 next to the first king."; renderCapture(); return; }
           tryAppend({ type: "setup", players: filled.map((p) => p.name), firstKing });
-        } }, "Start game");
-        return el("div", {}, el("h2", {}, "Players"), hint, el("div", { class: "names" }, rows), start);
+        } }, "▶️ Start game");
+        return el("div", {}, el("h2", {}, "🪑 Players"), hint, el("div", { class: "names" }, rows), start);
       }
 
-      function playerChip(view, index, extra) {
-        const chip = el("button", { class: "chip", type: "button", onclick: extra.onclick },
-          el("span", { class: "mark" }, extra.mark ?? ""),
-          el("span", {}, view.players[index], index === view.king ? " 👑" : ""));
-        if (extra.team) chip.append(el("span", { class: "team-tag" }, "team"));
-        if (extra.class) chip.classList.add(...extra.class.split(" ").filter(Boolean));
-        return chip;
+      // Whoever will propose 5th this quest; kingship moves one seat per proposal.
+      function hammerSeat(view) {
+        return (view.king + 5 - view.proposalNumber) % view.players.length;
+      }
+
+      // One seat on the ring: a round token with a mark inside, the name under it, crown for the king.
+      function seat(view, index, extra) {
+        const token = el("span", { class: "token" }, extra.mark ?? "");
+        if (index === view.king) token.append(el("span", { class: "crown" }, "👑"));
+        if (extra.shield) token.append(el("span", { class: "shield" }, "🛡️"));
+        if (index === hammerSeat(view)) token.append(el("span", { class: "hammer-mark" }, "🔨"));
+        const node = el("button", { class: "seat", type: "button", onclick: extra.onclick }, token, el("span", { class: "name" }, view.players[index]));
+        if (extra.class) node.classList.add(...extra.class.split(" ").filter(Boolean));
+        return node;
+      }
+
+      // Players around the table, clockwise from the top, seating order; `center` sits in the middle.
+      function ring(seats, center) {
+        const n = seats.length;
+        seats.forEach((node, i) => {
+          const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
+          node.style.left = `${50 + 39 * Math.cos(angle)}%`;
+          node.style.top = `${50 + 39 * Math.sin(angle)}%`;
+        });
+        return el("div", { class: "ring" }, seats, el("div", { class: "center" }, center));
       }
 
       function proposePanel(view) {
         const full = ui.chosen.size >= view.teamSize;
-        const chips = view.players.map((_, i) => playerChip(view, i, {
+        const left = view.teamSize - ui.chosen.size;
+        const seats = view.players.map((_, i) => seat(view, i, {
           class: ui.chosen.has(i) ? "selected" : full ? "dim" : "",
-          mark: ui.chosen.has(i) ? "✓" : "",
+          shield: ui.chosen.has(i),
           onclick: () => { if (ui.chosen.has(i)) ui.chosen.delete(i); else if (!full) ui.chosen.add(i); renderCapture(view); }
         }));
-        const label = view.isHammer ? "Send team (no vote)" : "Propose team";
+        const center = [
+          el("div", { class: "big" }, `${ui.chosen.size} / ${view.teamSize}`),
+          el("div", { class: "sub" }, left === 0 ? "✅" : "🛡️".repeat(left))
+        ];
+        const label = view.isHammer ? "🔨 Send team" : "📜 Propose team";
         return el("div", {},
-          el("h2", {}, `${view.players[view.king]} picks the team`),
-          el("p", { class: "hint" }, `${ui.chosen.size} / ${view.teamSize} chosen`),
-          el("div", { class: "chips" }, chips),
+          ring(seats, center),
           el("button", { class: "btn primary", disabled: ui.chosen.size !== view.teamSize,
             onclick: () => tryAppend({ type: "propose", team: [...ui.chosen].sort((a, b) => a - b) }) }, label));
       }
@@ -227,102 +285,97 @@
       function votePanel(view) {
         const proposal = view.quests.at(-1).proposals.at(-1);
         const team = new Set(proposal.team);
-        const presets = {
-          reject: () => new Set(),
-          team: () => new Set(proposal.team),
-          approve: () => new Set(view.players.map((_, i) => i))
-        };
-        const applyPreset = (name) => { ui.preset = name; ui.approvals = presets[name](); renderCapture(view); };
-        const presetBar = el("div", { class: "presets" },
-          [["reject", "All reject"], ["team", "Team only"], ["approve", "All approve"]].map(([name, text]) =>
-            el("button", { class: `btn ${ui.preset === name ? "on" : ""}`, type: "button", onclick: () => applyPreset(name) }, text)));
-        const chips = view.players.map((_, i) => playerChip(view, i, {
-          class: ui.approvals.has(i) ? "approve" : "reject",
-          mark: ui.approvals.has(i) ? "✓" : "✗",
-          team: team.has(i),
-          onclick: () => { ui.preset = ""; if (ui.approvals.has(i)) ui.approvals.delete(i); else ui.approvals.add(i); renderCapture(view); }
+        const n = view.players.length;
+        // Quick fills; a preset lights up whenever the seats currently match it.
+        const presets = [
+          [`${n}👍`, view.players.map((_, i) => i)],
+          ["🛡️👍", proposal.team],
+          [`${n}👎`, []]
+        ];
+        const same = (list) => list.length === ui.approvals.size && list.every((i) => ui.approvals.has(i));
+        const presetBar = el("div", { class: "presets" }, presets.map(([label, list]) =>
+          el("button", { class: `btn ${same(list) ? "on" : ""}`, type: "button",
+            onclick: () => { ui.approvals = new Set(list); renderCapture(view); } }, label)));
+        const seats = view.players.map((_, i) => seat(view, i, {
+          class: `${ui.approvals.has(i) ? "approve" : "reject"} ${team.has(i) ? "team" : ""}`,
+          mark: ui.approvals.has(i) ? "👍" : "👎",
+          shield: team.has(i),
+          onclick: () => { if (ui.approvals.has(i)) ui.approvals.delete(i); else ui.approvals.add(i); renderCapture(view); }
         }));
-        const n = view.players.length, yes = ui.approvals.size, passes = yes > n / 2;
+        const yes = ui.approvals.size, passes = yes > n / 2;
+        const center = [
+          el("div", { class: `big ${passes ? "pass" : "fail"}` }, `${yes}–${n - yes}`),
+          el("div", { class: `sub ${passes ? "pass" : "fail"}` }, passes ? "👍" : "👎")
+        ];
         return el("div", {},
-          el("h2", {}, `Vote on ${view.players[proposal.king]}'s team`),
-          el("p", { class: "hint" }, proposal.team.map((i) => view.players[i]).join(", ")),
           presetBar,
-          el("div", { class: "chips" }, chips),
-          el("div", { class: `tally ${passes ? "pass" : "fail"}` }, `${yes} approve · ${n - yes} reject → ${passes ? "PASSES" : "REJECTED"}`),
-          el("button", { class: "btn primary", onclick: () => tryAppend({ type: "vote", approvals: [...ui.approvals].sort((a, b) => a - b) }) }, "Record vote"));
+          ring(seats, center),
+          el("button", { class: "btn primary", onclick: () => tryAppend({ type: "vote", approvals: [...ui.approvals].sort((a, b) => a - b) }) }, "🗳️ Record vote"));
       }
 
       function questPanel(view) {
         const proposal = view.quests.at(-1).proposals.at(-1);
-        const buttons = Array.from({ length: proposal.team.length + 1 }, (_, n) =>
-          el("button", { class: `btn ${ui.fails === n ? "on" : ""}`, type: "button", onclick: () => { ui.fails = n; renderCapture(view); } }, String(n)));
-        const verdict = ui.fails === null ? "" : `${ui.fails} fail${ui.fails === 1 ? "" : "s"} → quest ${ui.fails >= view.failsToFail ? "FAILS" : "PASSES"}`;
+        // One row per possible outcome, all ✅ down to all ❌; each row is tinted by what the model would rule,
+        // so the quest-4 two-fail rule shows itself (the one-❌ row stays green).
+        const size = proposal.team.length;
+        const rows = Array.from({ length: size + 1 }, (_, n) => {
+          const outcome = n >= view.failsToFail ? "fail" : "pass";
+          return el("button", { class: `btn ${outcome} ${ui.fails === n ? "on" : ""}`, type: "button",
+            onclick: () => { ui.fails = n; renderCapture(view); } }, "✅".repeat(size - n) + "❌".repeat(n));
+        });
         return el("div", {},
-          el("h2", {}, `Quest ${view.questNumber} result`),
-          el("p", { class: "hint" }, `${proposal.team.map((i) => view.players[i]).join(", ")} went. ` +
-            (view.failsToFail === 2 ? "Needs 2 fails to fail. " : "") + "How many fail cards?"),
-          el("div", { class: "fails" }, buttons),
-          el("div", { class: `tally ${ui.fails !== null && ui.fails >= view.failsToFail ? "fail" : "pass"}` }, verdict),
-          el("button", { class: "btn primary", disabled: ui.fails === null, onclick: () => tryAppend({ type: "quest", fails: ui.fails }) }, "Record quest"));
+          el("h2", {}, `⚔️ ${proposal.team.map((i) => "🛡️ " + view.players[i]).join("  ")}`),
+          el("div", { class: "fails" }, rows),
+          el("button", { class: "btn primary", disabled: ui.fails === null, onclick: () => tryAppend({ type: "quest", fails: ui.fails }) }, "⚔️ Record quest"));
       }
 
       function overPanel(view) {
         return el("div", { class: "over" },
-          el("div", { class: `winner ${view.winner}` }, `${view.winner.toUpperCase()} wins`),
-          el("div", {}, `${view.score.pass} – ${view.score.fail}`),
-          el("p", { class: "hint" }, "(assassination not tracked)"),
-          el("button", { class: "btn primary", onclick: newGame }, "New game"));
+          el("div", { class: `winner ${view.winner}` }, view.winner === "good" ? "🏆 GOOD" : "🏆 EVIL"),
+          el("div", {}, `✅ ${view.score.pass} – ${view.score.fail} ❌`),
+          el("p", { class: "hint" }, "🗡️ assassination not tracked"),
+          el("button", { class: "btn primary", onclick: newGame }, "🆕 New game"));
       }
 
-      // ---- review ----
-      function initials(players) {
-        return players.map((name) => {
-          const one = name[0].toUpperCase();
-          return players.filter((other) => other[0].toUpperCase() === one).length > 1 ? name.slice(0, 2) : one;
-        });
-      }
-
+      // ---- review: one row per proposal, one column per seat; team = shaded cells ----
       function renderReview(view) {
         reviewEl.replaceChildren();
-        if (view.phase === "setup") { reviewEl.append(el("p", { class: "hint" }, "Start a game on the Capture tab.")); return; }
+        if (view.phase === "setup") return;
         const score = el("div", { class: "score" },
           [1, 2, 3, 4, 5].map((n) => {
             const q = view.quests[n - 1];
             const state = q?.result ? q.result : (n === view.questNumber && view.phase !== "over") ? "now" : "todo";
-            const sym = { pass: "✓", fail: "✗", now: "●", todo: "○" }[state];
-            const cell = el("div", { class: `q ${state}` }, el("b", {}, sym), `Q${n}`);
-            if (n === 4 && view.players.length >= 7) cell.append(el("div", {}, "2 fails"));
+            const sym = { pass: "✅", fail: "❌", now: "⚔️", todo: "○" }[state];
+            const cell = el("div", { class: `q ${state}` }, el("b", {}, sym), String(n));
             return cell;
-          }),
-          el("div", { class: "total" }, `${view.score.pass}–${view.score.fail}`));
-        const ini = initials(view.players);
-        const legend = el("div", { class: "legend" }, view.players.map((p, i) => `${ini[i]}=${p}`).join("  "));
-        const head = el("tr", {}, el("th", { class: "label" }, ""), ini.map((s) => el("th", {}, s)), el("th", { class: "res" }, ""));
+          }));
+        const head = el("tr", {}, el("th", { class: "label" }),
+          view.players.map((name) => el("th", { class: "vname" }, el("span", {}, name.slice(0, 8)))), el("th", { class: "res" }));
+        const width = String(view.players.length + 2);
         const rows = [];
         view.quests.forEach((quest) => {
           quest.proposals.forEach((p, pi) => {
             const hammer = p.approvals === null && p.approved === true;
-            const tr = el("tr", { class: pi === 0 ? "quest-start" : "" }, el("td", { class: "label" }, `Q${quest.number} P${pi + 1}`));
+            const tr = el("tr", { class: pi === 0 ? "quest-start" : "" }, el("td", { class: "label" }, pi === 0 ? String(quest.number) : ""));
             view.players.forEach((_, i) => {
-              const onTeam = p.team.includes(i);
-              let text = "·", cls = "dot";
-              if (p.approvals !== null) { const yes = p.approvals.includes(i); text = yes ? "✓" : "✗"; cls = yes ? "yes" : "no"; }
+              let text = "·", cls = "pending";
+              if (p.approvals !== null) { const yes = p.approvals.includes(i); text = yes ? "👍" : "👎"; cls = yes ? "yes" : "no"; }
               else if (hammer) { text = ""; cls = ""; }
-              const td = el("td", { class: `${cls} ${onTeam ? "team" : ""}` }, text);
-              if (p.king === i) td.textContent = (td.textContent || "") + "👑";
+              const td = el("td", { class: `${cls} ${p.team.includes(i) ? "team" : ""}` }, text);
+              if (p.king === i) td.append(el("span", { class: "crown" }, "👑"));
               tr.append(td);
             });
-            tr.append(el("td", { class: "res" }, hammer ? "🔨" : p.approved === null ? "…" : p.approved ? "⇧" : "⇩"));
+            const res = hammer ? "🔨" : p.approved === null ? "" : el("span", { class: `vdot ${p.approved ? "g" : "r"}` });
+            tr.append(el("td", { class: "res" }, res));
             rows.push(tr);
           });
           if (quest.result) {
-            const team = quest.proposals.at(-1).team.map((i) => view.players[i]).join(" ");
-            rows.push(el("tr", {}, el("td", { class: `result ${quest.result}`, colspan: String(view.players.length + 2) },
-              `Quest ${quest.number} · ${team} · ${quest.fails} fail${quest.fails === 1 ? "" : "s"} · ${quest.result.toUpperCase()}`)));
+            const size = quest.proposals.at(-1).team.length;
+            rows.push(el("tr", { class: "result" }, el("td", { class: "label" }, "⚔️"),
+              el("td", { class: quest.result, colspan: String(view.players.length + 1) }, "✅".repeat(size - quest.fails) + "❌".repeat(quest.fails))));
           }
         });
-        if (!rows.length) rows.push(el("tr", {}, el("td", { class: "result", colspan: String(view.players.length + 2) }, `Waiting for ${view.players[view.king]}'s first proposal.`)));
-        reviewEl.append(score, legend, el("table", { class: "grid" }, el("thead", {}, head), el("tbody", {}, rows)));
+        reviewEl.append(score, el("table", { class: "grid" }, el("thead", {}, head), el("tbody", {}, rows)));
       }
 
       // ---- tabs and swipe ----
@@ -343,7 +396,7 @@
       }, { passive: true });
 
       // ---- header actions ----
-      undoBtn.addEventListener("click", () => commit(Game.undo(events)));
+      undoBtn.addEventListener("click", back);
       function newGame() {
         if (events.length && !confirm("Clear this game and start a new one?")) return;
         localStorage.removeItem(STORAGE_KEY);
@@ -351,6 +404,23 @@
         showTab("capture");
       }
       $("#new-game").addEventListener("click", newGame);
+
+      // Reload to pick up a new version of the app. The game is autosaved, so nothing is lost.
+      let reloading = false;
+      $("#reload").addEventListener("click", () => { reloading = true; location.reload(); });
+
+      // Guard against leaving mid-game: the phone's back button and page close/refresh both ask first.
+      // (The game is autosaved either way; this stops an accidental exit from the table.)
+      history.pushState({ thavalon: true }, "");
+      window.addEventListener("popstate", () => {
+        if (!events.length || confirm("Leave the tracker? Your game stays saved.")) { history.back(); return; }
+        history.pushState({ thavalon: true }, "");
+      });
+      window.addEventListener("beforeunload", (e) => {
+        if (!events.length || reloading) return;
+        e.preventDefault();
+        e.returnValue = "";
+      });
 
       render();
       showTab("capture");

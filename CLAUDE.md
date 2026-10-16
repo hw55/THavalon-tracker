@@ -40,6 +40,10 @@ Working assumptions:
 
 Files: `index.html` (both screens), `game.js` (the model), `tests.js` + `tests.html` (checks against `game.js`, no framework; run with `node tests.js` or by opening `tests.html`).
 
+## UI principle: show, don't tell
+
+If something can be shown, don't explain it in words. Use position, colour, shape, emoji and repetition instead of labels, sentences and legends. For example: team = shaded cell or 🛡️ (no "on the team" text); team size = repeated 🛡️; vote result = a coloured dot, not "PASSED". Before adding any text to a screen, ask whether a visual already says it, and if so leave the text out. Text is for names and numbers.
+
 ## Process
 
 Split by module, because rules can be verified by reading but screens only by using:
@@ -49,9 +53,12 @@ Split by module, because rules can be verified by reading but screens only by us
 
 Local iteration loop: `python3 -m http.server 8000` in the repo, open `http://<mac-ip>:8000` on the phone over Wi-Fi.
 
+**Commit every UI iteration** as soon as it's done (one commit per round of feedback, no need to ask), so any version can be checked out and compared on the phone. The message says what changed on screen. Pushing to GitHub still waits for the user to ask.
+
 ## Repository layout
 
 - `docs/worklog.md` — decisions, deferred items, open questions, log.
+- `docs/prompts.md` — every user prompt, word for word, in order. Append each new prompt there.
 - `docs/spec/` — module specs (`SPEC-<module-id>.md`).
 - `archive/` — the previous tracker, kept **for reference only**. Nothing new depends on it, it isn't maintained, and its structure (desktop layout, DOM-as-state, hand-entered outcomes) is not the pattern to copy. It has its own CLAUDE.md.
 
