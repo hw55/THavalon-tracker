@@ -1,3 +1,5 @@
 .remember/
 .DS_Store
 .envrc
+docs/prompts.md
+docs/worklog.md
