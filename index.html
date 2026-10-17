@@ -48,7 +48,7 @@
     .error { color: var(--red); min-height: 1.4em; margin-top: .5rem; }
 
     .names { display: flex; flex-direction: column; gap: .4rem; }
-    .names label { display: flex; align-items: center; gap: .4rem; }
+    .names .seat-row { display: flex; align-items: center; gap: .4rem; }
     .names .seat-no { width: 1.4rem; color: var(--muted); font-size: .85rem; text-align: right; }
     .names input { flex: 1; min-width: 0; min-height: 44px; padding: 0 .6rem; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; }
     .names .king-pick { min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); opacity: .45; }
@@ -56,8 +56,8 @@
     /* ⠿ handle: hold and drag a row to its seat. touch-action stops the page scrolling while dragging. */
     .names .drag { min-width: 34px; min-height: 44px; display: flex; align-items: center; justify-content: center;
       color: var(--muted); font-size: 1.3rem; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
-    .names label.dragging { position: relative; z-index: 1; border-radius: 10px; background: rgba(124, 108, 240, .22); box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
-    .names label.dragging .drag { color: var(--text); cursor: grabbing; }
+    .names .seat-row.dragging { position: relative; z-index: 1; border-radius: 10px; background: rgba(124, 108, 240, .22); box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
+    .names .seat-row.dragging .drag { color: var(--text); cursor: grabbing; }
     .roster-box { display: flex; flex-direction: column; gap: .4rem; margin-top: 1rem; }
     .roster { display: flex; gap: .4rem; align-items: center; }
     .roster-icon { min-width: 52px; text-align: center; font-size: 1.3rem; }
@@ -286,30 +286,34 @@
 
       // Hold a row's ⠿ and drag: the row moves live in the DOM, and on release the new order is written
       // back to ui.setupNames (the 👑 follows its player). No redraw until then, or the drag would be lost.
+      // Moves are heard on the window, not the handle: moving the row in the DOM makes the browser drop
+      // pointer capture, after which the handle would stop receiving them (seen with mouse and touch).
       function dragSeat(event, row) {
         event.preventDefault();
-        const handle = event.currentTarget;
         const list = row.parentElement;
-        handle.setPointerCapture(event.pointerId);
         row.classList.add("dragging");
+        document.body.style.userSelect = "none";
         const move = (e) => {
+          if (e.pointerId !== event.pointerId) return;
           const others = [...list.children].filter((r) => r !== row);
           const before = others.find((r) => { const box = r.getBoundingClientRect(); return e.clientY < box.top + box.height / 2; });
-          list.insertBefore(row, before ?? null);
+          if (row.nextElementSibling !== (before ?? null)) list.insertBefore(row, before ?? null);
         };
-        const drop = () => {
-          handle.removeEventListener("pointermove", move);
-          handle.removeEventListener("pointerup", drop);
-          handle.removeEventListener("pointercancel", drop);
+        const drop = (e) => {
+          if (e.pointerId !== event.pointerId) return;
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", drop);
+          window.removeEventListener("pointercancel", drop);
+          document.body.style.userSelect = "";
           const order = [...list.children].map((r) => Number(r.dataset.seat));
           const names = ui.setupNames;
           ui.setupNames = order.map((seat) => names[seat]);
           ui.setupKing = ui.setupKing < 0 ? -1 : order.indexOf(ui.setupKing);
           renderCapture();
         };
-        handle.addEventListener("pointermove", move);
-        handle.addEventListener("pointerup", drop);
-        handle.addEventListener("pointercancel", drop);
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", drop);
+        window.addEventListener("pointercancel", drop);
       }
 
       function setupPanel() {
@@ -321,7 +325,8 @@
           const pick = el("button", { class: `king-pick ${ui.setupKing === i ? "on" : ""}`, type: "button", title: "First king",
             onclick: () => { ui.setupKing = i; renderCapture(); } }, "👑");
           const handle = el("span", { class: "drag", title: "Hold and drag to move" }, "⠿");
-          const row = el("label", { "data-seat": String(i) }, pick, el("span", { class: "seat-no" }, String(i + 1)), input, handle);
+          // A div, not a label: releasing a drag over a label would move focus into that row's input.
+          const row = el("div", { class: "seat-row", "data-seat": String(i) }, pick, el("span", { class: "seat-no" }, String(i + 1)), input, handle);
           handle.addEventListener("pointerdown", (event) => dragSeat(event, row));
           return row;
         });
