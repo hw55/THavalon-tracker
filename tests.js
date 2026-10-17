@@ -446,6 +446,15 @@ test("rosterUrl builds the player-list address, tidying the game ID and the serv
   assertEqual(G.rosterUrl("https://x.example", "a/b"), "https://x.example/api/games/A%2FB/players", "escaped");
 });
 
+test("rosterUrl accepts a bare host name as an https server", () => {
+  assertEqual(G.rosterUrl("thavalon.onrender.com", "friday"), "https://thavalon.onrender.com/api/games/FRIDAY/players");
+  assertEqual(G.rosterUrl("  my.server.example:8443/ ", "x"), "https://my.server.example:8443/api/games/X/players");
+});
+
+test("rosterUrl refuses an empty server", () => {
+  assertThrows(() => G.rosterUrl("  ", "FRIDAY"), /server/i);
+});
+
 test("rosterUrl refuses an empty game ID", () => {
   assertThrows(() => G.rosterUrl("https://x.example", "   "), /game ID/i);
 });

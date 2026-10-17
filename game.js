@@ -167,10 +167,14 @@ const Game = (() => {
   // ---- loading players from the THavalon server (GET /api/games/{id}/players, feyweb/THavalon#19) ----
 
   // The server matches game IDs case-insensitively, but a tidy URL is easier to read in a log.
+  // A server typed without a scheme ("thavalon.onrender.com") is taken as https.
   function rosterUrl(server, gameId) {
+    let base = String(server ?? "").trim().replace(/\/+$/, "");
+    if (!base) throw new Error("Enter the game server's address.");
+    if (!/^https?:\/\//i.test(base)) base = `https://${base}`;
     const id = String(gameId ?? "").trim().toUpperCase();
     if (!id) throw new Error("Enter a game ID.");
-    return `${String(server).replace(/\/+$/, "")}/api/games/${encodeURIComponent(id)}/players`;
+    return `${base}/api/games/${encodeURIComponent(id)}/players`;
   }
 
   // The server's reply → the setup screen's seats (join order) and the first king's seat, or -1
