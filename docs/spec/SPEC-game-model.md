@@ -53,7 +53,7 @@ Rules the model enforces when an event is appended (it throws a descriptive erro
 - `setup` comes first and only once; 5–10 unique, non-empty names; `firstKing` in range.
 - `propose` only when no proposal is open; team size matches the quest's team size; indexes unique and in range.
 - `vote` only when a proposal is open and it is **not** the hammer (5th proposal of a quest); indexes unique and in range.
-- `quest` only when a proposal has been approved (by vote or by hammer) and the quest hasn't been resolved; `0 ≤ fails`, `0 ≤ rogues ≤ 2`, `fails + rogues ≤ team size`; `agravaine`, if given, is a player on that team.
+- `quest` only when a proposal has been approved (by vote or by hammer) and the quest hasn't been resolved; `0 ≤ fails`, `0 ≤ rogues ≤ 2`, `fails + rogues ≤ team size`; `agravaine`, if given, is a player on that team and `fails ≥ 1` (one of the fail cards is Agravaine's own).
 - Nothing after the game is over.
 
 ### Derived view
@@ -83,7 +83,7 @@ Rules encoded:
 - **Team sizes** (players → quests 1–5): 5: 2 3 2 3 3 · 6: 2 3 4 3 4 · 7: 2 3 3 4 4 · 8–10: 3 4 4 5 5.
 - **Vote:** approved when `approvals.length > players.length / 2`.
 - **Hammer:** the 5th proposal of a quest needs no vote; it is approved automatically.
-- **Quest result:** `fail` when `fails ≥ failsToFail`, else `pass`. Then **rogue cards** (🎭, confirmed 2026-10-16): a rogue card is one of the team's cards; one rogue flips that result either way; two rogues cancel out. On quest 4 with 7+ players the two-fail rule is applied first, then the flip. Finally **Agravaine** (👹, added 2026-10-16): if a team member comes out as Agravaine, the quest fails, whatever the cards and rogues said. Agravaine's declaration doesn't change the card counts.
+- **Quest result:** `fail` when `fails ≥ failsToFail`, else `pass`. Then **rogue cards** (🎭, confirmed 2026-10-16): a rogue card is one of the team's cards; one rogue flips that result either way; two rogues cancel out. On quest 4 with 7+ players the two-fail rule is applied first, then the flip. Finally **Agravaine** (👹, added 2026-10-16): if a team member comes out as Agravaine, the quest fails, whatever the cards and rogues said. Agravaine plays a fail card, so `fails` includes his card (the screens draw it as 👹); declaring doesn't add or remove cards.
 - **Game over:** three passes → `winner: "good"`; three fails → `winner: "evil"`. (Assassination is a TODO and not modelled; "good" means "good, pending assassination".)
 
 ### Public API (`game.js`)
@@ -139,7 +139,7 @@ Conventions: `const` everywhere; double quotes; 2-space indent; small named func
 - Hammer: 5th proposal can't be voted on and is auto-approved.
 - Quest: 1 fail fails quest 1; on quest 4 with 7 players, 1 fail passes and 2 fails fail; with 6 players 1 fail fails.
 - Rogues: one rogue turns a pass into a fail and a fail into a pass; two rogues cancel; on quest 4 with 7 players `✅✅❌🎭` fails and `✅❌❌🎭` passes; more than 2 rogues, negative rogues, or `fails + rogues` above the team size are rejected; a `quest` event without `rogues` means 0 (older saved games still load).
-- Agravaine: fails a quest the cards would pass; also overrides a rogue flip to pass; must be on the team, in range, an integer; omitted means `null` and changes nothing; counts as a failed quest toward game over.
+- Agravaine: fails a quest the cards would pass (e.g. one fail on quest 4 with 7 players); also overrides a rogue flip to pass; must be on the team, in range, an integer; needs at least one fail card; omitted means `null` and changes nothing; counts as a failed quest toward game over.
 - Game over at 3 passes / 3 fails; further events rejected.
 - Undo reverses the last event; undo on an empty log is a no-op.
 - serialize → deserialize round-trips; deserialize rejects a log with an illegal event.

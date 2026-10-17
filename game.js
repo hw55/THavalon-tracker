@@ -99,6 +99,7 @@ const Game = (() => {
     if (agravaine !== null && !openProposal(quest).team.includes(agravaine)) {
       throw new Error("Agravaine must be one of the players on the team.");
     }
+    if (agravaine !== null && event.fails < 1) throw new Error("Agravaine plays a fail card, so there must be at least one.");
     quest.fails = event.fails;
     quest.rogues = rogues;
     quest.agravaine = agravaine;

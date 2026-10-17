@@ -294,9 +294,16 @@ test("a quest without rogues counts as zero rogues", () => {
 const agravaineQuest = (events, fails, agravaine, rogues = 0) => G.append(events, { type: "quest", fails, rogues, agravaine });
 
 test("Agravaine fails a quest the cards would pass and is recorded", () => {
-  const view = G.replay(agravaineQuest(approvedTeam(setup(5), [0, 1]), 0, 1));
-  assertEqual(view.quests[0].result, "fail");
-  assertEqual(view.quests[0].agravaine, 1);
+  // Quest 4 with 7 players: Agravaine's single fail card wouldn't fail it, so he comes out.
+  const base = approvedTeam(reachQuest4(7, ["pass", "fail", "pass"]), [0, 1, 2, 3]);
+  assertEqual(G.replay(quest(base, 1)).quests[3].result, "pass", "without Agravaine");
+  const view = G.replay(agravaineQuest(base, 1, 2));
+  assertEqual(view.quests[3].result, "fail");
+  assertEqual(view.quests[3].agravaine, 2);
+});
+
+test("Agravaine needs at least one fail card (his own)", () => {
+  assertThrows(() => agravaineQuest(approvedTeam(setup(5), [0, 1]), 0, 1), /fail card/i);
 });
 
 test("Agravaine overrides a rogue flip that would have passed the quest", () => {
@@ -305,9 +312,9 @@ test("Agravaine overrides a rogue flip that would have passed the quest", () => 
 
 test("Agravaine must be a player on the team", () => {
   const base = approvedTeam(setup(5), [0, 1]);
-  assertThrows(() => agravaineQuest(base, 0, 3), /team/i);
-  assertThrows(() => agravaineQuest(base, 0, 9), /team|range/i);
-  assertThrows(() => agravaineQuest(base, 0, 0.5), /team|player/i);
+  assertThrows(() => agravaineQuest(base, 1, 3), /team/i);
+  assertThrows(() => agravaineQuest(base, 1, 9), /team|range/i);
+  assertThrows(() => agravaineQuest(base, 1, 0.5), /team|player/i);
 });
 
 test("a quest without Agravaine records null and is decided by the cards", () => {
@@ -318,7 +325,7 @@ test("a quest without Agravaine records null and is decided by the cards", () =>
 
 test("Agravaine fails count toward evil winning", () => {
   let e = setup(5);
-  for (const team of [[0, 1], [0, 1, 2], [0, 1]]) e = agravaineQuest(approvedTeam(e, team), 0, 0);
+  for (const team of [[0, 1], [0, 1, 2], [0, 1]]) e = agravaineQuest(approvedTeam(e, team), 1, 0);
   assertEqual(G.replay(e).winner, "evil");
 });
 
