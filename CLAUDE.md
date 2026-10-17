@@ -36,9 +36,9 @@ Working assumptions:
 - Quest result is entered as the number of fail cards; the app decides pass/fail.
 - Game end (3 passed / 3 failed quests) is detected and shown; assassination isn't modelled.
 - One game at a time, saved in localStorage so a refresh doesn't lose it.
-- Hosted on GitHub Pages from this repo, so players open a URL rather than a file.
+- Hosted on GitHub Pages from this repo, so players open a URL rather than a file: **https://hw55.github.io/THavalon-tracker/** (served from `main`, repo root; every push to `main` redeploys within a minute or two).
 
-Files: `index.html` (both screens), `game.js` (the model), `tests.js` + `tests.html` (checks against `game.js`, no framework; run with `node tests.js` or by opening `tests.html`).
+Files: `index.html` (both screens), `game.js` (the model), `tests.js` + `tests.html` (checks against `game.js`, no framework; run with `node tests.js`, or open `tests.html` in a browser, locally or at `…/THavalon-tracker/tests.html` on Pages).
 
 ## UI principle: show, don't tell
 
@@ -53,7 +53,7 @@ Split by module, because rules can be verified by reading but screens only by us
 
 Local iteration loop: `python3 -m http.server 8000` in the repo, open `http://<mac-ip>:8000` on the phone over Wi-Fi.
 
-**Commit every UI iteration** as soon as it's done (one commit per round of feedback, no need to ask), so any version can be checked out and compared on the phone. The message says what changed on screen. Pushing to GitHub still waits for the user to ask.
+**Commit every UI iteration** as soon as it's done (one commit per round of feedback, no need to ask), so any version can be checked out and compared on the phone. The message says what changed on screen. Pushing to GitHub still waits for the user to ask, and now matters more: a push to `main` publishes the live app that players use.
 
 ## Repository layout
 
