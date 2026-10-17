@@ -59,7 +59,7 @@ Local iteration loop: `python3 -m http.server 8000` in the repo, open `http://<m
 
 - `docs/worklog.md` — decisions, deferred items, open questions, log.
 - `docs/prompts.md` — every user prompt, word for word, in order. Append each new prompt there.
-- Both of those are **local only**: git-ignored and never pushed (they were scrubbed from the unpushed history on 2026-10-16). Keep updating them, but don't commit them.
+- `docs/prompts.md` is **local only**: git-ignored and never pushed. Keep appending to it, but don't commit it. The worklog is committed and pushed like everything else.
 - `docs/spec/` — module specs (`SPEC-<module-id>.md`).
 - `archive/` — the previous tracker, kept **for reference only**. Nothing new depends on it, it isn't maintained, and its structure (desktop layout, DOM-as-state, hand-entered outcomes) is not the pattern to copy. It has its own CLAUDE.md.
 
