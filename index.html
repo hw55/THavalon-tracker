@@ -55,6 +55,7 @@
     .seat .crown { position: absolute; top: -14px; right: -8px; font-size: .95rem; }
     .seat .shield { position: absolute; bottom: -10px; right: -10px; font-size: 1.05rem; }
     .seat .hammer-mark { position: absolute; bottom: -10px; left: -10px; font-size: 1rem; }
+    .seat .agravaine-face { font-size: 2.2rem; line-height: 1; }
     .seat.selected .token { border-color: var(--accent); background: rgba(124, 108, 240, .35); }
     .seat.selected .name { color: var(--text); }
     .seat.dim { opacity: .35; }
@@ -263,7 +264,8 @@
       // One seat on the ring: a round token with a mark inside, the name under it, crown for the king.
       function seat(view, index, extra) {
         // A revealed Agravaine shows 👹 in the middle of the token; their vote still shows through the token's colour.
-        const token = el("span", { class: "token" }, revealedAgravaine(view) === index ? "👹" : extra.mark ?? "");
+        const token = el("span", { class: "token" },
+          revealedAgravaine(view) === index ? el("span", { class: "agravaine-face" }, "👹") : extra.mark ?? "");
         if (index === view.king) token.append(el("span", { class: "crown" }, "👑"));
         if (extra.shield) token.append(el("span", { class: "shield" }, "🛡️"));
         if (index === hammerSeat(view)) token.append(el("span", { class: "hammer-mark" }, "🔨"));
