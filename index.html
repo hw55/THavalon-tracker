@@ -55,6 +55,7 @@
     .seat .crown { position: absolute; top: -14px; right: -8px; font-size: .95rem; }
     .seat .shield { position: absolute; bottom: -10px; right: -10px; font-size: 1.05rem; }
     .seat .hammer-mark { position: absolute; bottom: -10px; left: -10px; font-size: 1rem; }
+    .seat .agravaine-mark { position: absolute; top: -12px; left: -10px; font-size: 1rem; }
     .seat.selected .token { border-color: var(--accent); background: rgba(124, 108, 240, .35); }
     .seat.selected .name { color: var(--text); }
     .seat.dim { opacity: .35; }
@@ -255,12 +256,18 @@
         return (view.king + 5 - view.proposalNumber) % view.players.length;
       }
 
+      // Once someone has come out as Agravaine, they stay marked 👹 for the rest of the game.
+      function revealedAgravaine(view) {
+        return view.quests.find((quest) => quest.agravaine !== null && quest.agravaine !== undefined)?.agravaine ?? null;
+      }
+
       // One seat on the ring: a round token with a mark inside, the name under it, crown for the king.
       function seat(view, index, extra) {
         const token = el("span", { class: "token" }, extra.mark ?? "");
         if (index === view.king) token.append(el("span", { class: "crown" }, "👑"));
         if (extra.shield) token.append(el("span", { class: "shield" }, "🛡️"));
         if (index === hammerSeat(view)) token.append(el("span", { class: "hammer-mark" }, "🔨"));
+        if (revealedAgravaine(view) === index) token.append(el("span", { class: "agravaine-mark" }, "👹"));
         const node = el("button", { class: "seat", type: "button", onclick: extra.onclick }, token, el("span", { class: "name" }, view.players[index]));
         if (extra.class) node.classList.add(...extra.class.split(" ").filter(Boolean));
         return node;
@@ -324,21 +331,40 @@
           el("button", { class: "btn primary", onclick: () => tryAppend({ type: "vote", approvals: [...ui.approvals].sort((a, b) => a - b) }) }, "🗳️ Record vote"));
       }
 
+      // A quest's cards as emoji: ✅ successes, ❌ fails (one of them drawn 👹 when it is Agravaine's), 🎭 rogues.
+      function cardText(size, fails, rogues, agravaine) {
+        const ownFail = agravaine ? 1 : 0;
+        return "✅".repeat(size - fails - rogues) + "❌".repeat(fails - ownFail) + "👹".repeat(ownFail) + "🎭".repeat(rogues);
+      }
+
       function questPanel(view) {
         const proposal = view.quests.at(-1).proposals.at(-1);
         // One row per possible outcome, all ✅ down to all ❌ (plus any 🎭); each row is tinted by what the
         // model would rule, so the quest-4 two-fail rule and a rogue's flip show themselves.
         const size = proposal.team.length;
         const rogues = ui.rogues, agravaine = ui.agravaine;
-        const rows = Array.from({ length: size - rogues + 1 }, (_, n) => {
+        // With Agravaine out, one fail card is his: rows start at one ❌ and draw it as 👹; the rest are the other cards.
+        const minFails = agravaine !== null ? 1 : 0;
+        const rows = Array.from({ length: size - rogues - minFails + 1 }, (_, k) => {
+          const n = k + minFails;
           const failed = n >= view.failsToFail;
           const outcome = agravaine !== null || failed !== (rogues === 1) ? "fail" : "pass";
           return el("button", { class: `btn ${outcome} ${ui.fails === n ? "on" : ""}`, type: "button",
-            onclick: () => { ui.fails = n; renderCapture(view); } }, "✅".repeat(size - n - rogues) + "❌".repeat(n) + "🎭".repeat(rogues));
+            onclick: () => { ui.fails = n; renderCapture(view); } }, cardText(size, n, rogues, agravaine !== null));
         });
-        // Rare: cycles 0 → 1 → 2 → 0 rogue cards (never more than the team has cards).
+        // Rare: cycles 0 → 1 → 2 → 0 rogue cards (never more than the team has cards, leaving room for Agravaine's).
+        const maxRogues = Math.min(2, size - minFails);
         const rogueBtn = el("button", { class: `btn ${rogues ? "on" : ""}`, type: "button",
-          onclick: () => { ui.rogues = (rogues + 1) % (Math.min(2, size) + 1); ui.fails = null; renderCapture(view); } }, `🎭 ${rogues}`);
+          onclick: () => { ui.rogues = (rogues + 1) % (maxRogues + 1); ui.fails = null; renderCapture(view); } }, `🎭 ${rogues}`);
+        // Marking or clearing Agravaine changes which rows exist, so drop a selection that no longer fits.
+        const toggleAgravaine = (i) => {
+          ui.agravaine = agravaine === i ? null : i;
+          if (ui.agravaine !== null) {
+            ui.rogues = Math.min(ui.rogues, Math.min(2, size - 1));
+            if (ui.fails === 0) ui.fails = null;
+          }
+          renderCapture(view);
+        };
         return el("div", {},
           el("div", { class: "fails" }, rows),
           el("div", { class: "rogue" }, rogueBtn),
@@ -346,8 +372,7 @@
             onclick: () => tryAppend({ type: "quest", fails: ui.fails, rogues, agravaine }) }, "⚔️ Record quest"),
           // Tap the team member who comes out as Agravaine (👹); tap again to clear. It fails the quest outright.
           el("div", { class: "quest-team" }, proposal.team.map((i) =>
-            el("button", { type: "button", class: agravaine === i ? "agravaine" : "",
-              onclick: () => { ui.agravaine = agravaine === i ? null : i; renderCapture(view); } },
+            el("button", { type: "button", class: agravaine === i ? "agravaine" : "", onclick: () => toggleAgravaine(i) },
               `${agravaine === i ? "👹" : "🛡️"} ${view.players[i]}`))));
       }
 
@@ -372,7 +397,8 @@
             return cell;
           }));
         const head = el("tr", {}, el("th", { class: "label" }),
-          view.players.map((name) => el("th", { class: "vname" }, el("span", {}, name.slice(0, 8)))), el("th", { class: "res" }));
+          view.players.map((name, i) => el("th", { class: "vname" },
+            el("span", {}, (revealedAgravaine(view) === i ? "👹" : "") + name.slice(0, 8)))), el("th", { class: "res" }));
         const width = String(view.players.length + 2);
         const rows = [];
         view.quests.forEach((quest) => {
@@ -399,8 +425,8 @@
           if (quest.result) {
             const size = quest.proposals.at(-1).team.length;
             rows.push(el("tr", { class: "result" }, el("td", { class: "label" }, "⚔️"),
-              el("td", { class: quest.result, colspan: String(view.players.length + 1) }, "✅".repeat(size - quest.fails - quest.rogues) + "❌".repeat(quest.fails) + "🎭".repeat(quest.rogues) +
-                (quest.agravaine !== null ? `  👹 ${view.players[quest.agravaine]}` : ""))));
+              el("td", { class: quest.result, colspan: String(view.players.length + 1) },
+                cardText(size, quest.fails, quest.rogues, quest.agravaine !== null))));
             rows.push(el("tr", { class: "gap" }, el("td", { colspan: width })));
           }
         });
