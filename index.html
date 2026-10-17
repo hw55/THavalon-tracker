@@ -53,9 +53,12 @@
     .names input { flex: 1; min-width: 0; min-height: 44px; padding: 0 .6rem; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; }
     .names .king-pick { min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); opacity: .45; }
     .names .king-pick.on { opacity: 1; background: var(--accent); border-color: var(--accent); }
-    .names .move { min-width: 34px; min-height: 44px; padding: 0; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); }
-    .names .move:disabled { opacity: .25; }
-    .roster { display: flex; gap: .4rem; margin-bottom: .75rem; }
+    /* ⠿ handle: hold and drag a row to its seat. touch-action stops the page scrolling while dragging. */
+    .names .drag { min-width: 34px; min-height: 44px; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 1.3rem; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+    .names label.dragging { position: relative; z-index: 1; border-radius: 10px; background: rgba(124, 108, 240, .22); box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
+    .names label.dragging .drag { color: var(--text); cursor: grabbing; }
+    .roster { display: flex; gap: .4rem; margin-top: 1rem; }
     .roster input { flex: 1; min-width: 0; min-height: 44px; padding: 0 .6rem; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; text-transform: uppercase; }
     .roster .btn { min-width: 52px; font-size: 1.3rem; padding: 0 .5rem; }
 
@@ -275,25 +278,46 @@
         }
       }
 
-      function setupPanel() {
-        const names = ui.setupNames;
-        // Swapping two seats carries the 👑 with its player.
-        const moveSeat = (from, to) => {
-          [names[from], names[to]] = [names[to], names[from]];
-          if (ui.setupKing === from) ui.setupKing = to;
-          else if (ui.setupKing === to) ui.setupKing = from;
+      // Hold a row's ⠿ and drag: the row moves live in the DOM, and on release the new order is written
+      // back to ui.setupNames (the 👑 follows its player). No redraw until then, or the drag would be lost.
+      function dragSeat(event, row) {
+        event.preventDefault();
+        const handle = event.currentTarget;
+        const list = row.parentElement;
+        handle.setPointerCapture(event.pointerId);
+        row.classList.add("dragging");
+        const move = (e) => {
+          const others = [...list.children].filter((r) => r !== row);
+          const before = others.find((r) => { const box = r.getBoundingClientRect(); return e.clientY < box.top + box.height / 2; });
+          list.insertBefore(row, before ?? null);
+        };
+        const drop = () => {
+          handle.removeEventListener("pointermove", move);
+          handle.removeEventListener("pointerup", drop);
+          handle.removeEventListener("pointercancel", drop);
+          const order = [...list.children].map((r) => Number(r.dataset.seat));
+          const names = ui.setupNames;
+          ui.setupNames = order.map((seat) => names[seat]);
+          ui.setupKing = ui.setupKing < 0 ? -1 : order.indexOf(ui.setupKing);
           renderCapture();
         };
+        handle.addEventListener("pointermove", move);
+        handle.addEventListener("pointerup", drop);
+        handle.addEventListener("pointercancel", drop);
+      }
+
+      function setupPanel() {
+        const names = ui.setupNames;
         const rows = names.map((name, i) => {
           const input = el("input", { placeholder: `Seat ${i + 1}`, maxlength: "20", autocapitalize: "words" });
           input.value = name;
           input.addEventListener("input", () => { names[i] = input.value; });
           const pick = el("button", { class: `king-pick ${ui.setupKing === i ? "on" : ""}`, type: "button", title: "First king",
             onclick: () => { ui.setupKing = i; renderCapture(); } }, "👑");
-          const up = el("button", { class: "move", type: "button", title: "Move up", disabled: i === 0, onclick: () => moveSeat(i, i - 1) }, "▲");
-          const down = el("button", { class: "move", type: "button", title: "Move down", disabled: i === names.length - 1,
-            onclick: () => moveSeat(i, i + 1) }, "▼");
-          return el("label", {}, pick, el("span", { class: "seat-no" }, String(i + 1)), input, up, down);
+          const handle = el("span", { class: "drag", title: "Hold and drag to move" }, "⠿");
+          const row = el("label", { "data-seat": String(i) }, pick, el("span", { class: "seat-no" }, String(i + 1)), input, handle);
+          handle.addEventListener("pointerdown", (event) => dragSeat(event, row));
+          return row;
         });
         const gameId = el("input", { placeholder: "Game ID", maxlength: "12", autocapitalize: "characters", autocomplete: "off" });
         gameId.value = ui.setupGameId;
@@ -313,7 +337,7 @@
           if (firstKing < 0) { ui.error = "Tap 👑 next to the first king."; renderCapture(); return; }
           tryAppend({ type: "setup", players: filled.map((p) => p.name), firstKing });
         } }, "▶️ Start game");
-        return el("div", {}, el("h2", {}, "🪑 Players"), roster, hint, el("div", { class: "names" }, rows), start);
+        return el("div", {}, el("h2", {}, "🪑 Players"), hint, el("div", { class: "names" }, rows), start, roster);
       }
 
       // Whoever will propose 5th this quest; kingship moves one seat per proposal.
@@ -509,9 +533,11 @@
       document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
       let touch = null;
       // Swipes that start at the very edge belong to the browser (iPhone's edge swipe is "back" = undo), so ignore them here.
+      // A drag on a seat's ⠿ handle is a reorder, not a screen flip.
       $("#screens").addEventListener("touchstart", (e) => {
         const x = e.touches[0].clientX;
-        touch = x < 24 || x > window.innerWidth - 24 ? null : { x, y: e.touches[0].clientY };
+        const edge = x < 24 || x > window.innerWidth - 24;
+        touch = edge || e.target.closest(".drag") ? null : { x, y: e.touches[0].clientY };
       }, { passive: true });
       $("#screens").addEventListener("touchend", (e) => {
         if (!touch) return;
