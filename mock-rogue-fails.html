@@ -32,11 +32,11 @@
     .preview.pass { background: var(--green-bg); } .preview.fail { background: var(--red-bg); }
     .preview.none { color: var(--muted); }
     /* A2: the rogue chip sits well below everything else, out of thumb's way for normal quests */
-    .apart { display: flex; justify-content: flex-end; margin-top: 3.5rem; padding-top: .75rem; border-top: 1px dashed var(--line); }
-    .apart .btn { min-height: 40px; font-size: 1.1rem; opacity: .6; }
+    .apart { display: flex; justify-content: flex-start; margin-top: 3rem; padding-top: .75rem; border-top: 1px dashed var(--line); }
+    .apart .btn { min-height: 44px; width: 5.5rem; font-size: 1.2rem; opacity: .6; font-variant-numeric: tabular-nums; }
     .apart .btn.on { opacity: 1; }
-    .team { font-size: 1rem; font-weight: 700; margin: .9rem 0 0; }
-    .record { width: 100%; margin-top: .9rem; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+    .record { width: 100%; margin-top: .75rem; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+    .team { margin-top: .9rem; display: flex; flex-direction: column; gap: .25rem; font-size: 1rem; }
   </style>
 </head>
 <body>
@@ -74,8 +74,8 @@
       return el("button", { class: `btn ${outcome(fails, rogues)} ${on ? "on" : ""} ${extra}`,
         onclick: () => { s.fails = fails; s.rogues = rogues; render(); } }, cards(fails, rogues));
     }
-    const normalRows = (v, rogues = 0) =>
-      Array.from({ length: size - rogues + 1 }, (_, f) => row(v, f, rogues, rogues ? "rare" : ""));
+    const normalRows = (v, rogues = 0, fadeRogues = true) =>
+      Array.from({ length: size - rogues + 1 }, (_, f) => row(v, f, rogues, rogues && fadeRogues ? "rare" : ""));
     function preview(v) {
       const s = state[v];
       if (s.fails === null) return el("div", { class: "preview none" }, "⚔️ (pick a row)");
@@ -83,18 +83,18 @@
     }
 
     const VARIANTS = {
-      A2: ["A2 · rogue chip set apart (chosen)", "The whole quest screen as it would look: result rows, team names, Record, and then, after a big gap, a faded 🎭 chip at the bottom right. Tap it to cycle 0 → 1 → 2 rogues; the rows above rebuild with 🎭 cards and the colours flip.",
+      A2: ["A2 · rogue counter set apart (chosen)", "The whole quest screen: result rows, then after a gap a 🎭 counter on the left (tap: 0 → 1 → 2 → 0; the rows rebuild to match), then Record, then the team one name per row. Rows keep the same size whatever the count.",
         (v) => {
           const s = state[v];
           const chip = el("button", { class: `btn ${s.rogues ? "on" : ""}`,
             onclick: () => { s.rogues = (s.rogues + 1) % Math.min(3, size + 1); s.fails = null; render(); } },
-            s.rogues ? "🎭".repeat(s.rogues) : "🎭");
-          const names = ["Ann", "Bob", "Cal", "Dee", "Eve"].slice(0, size).map((n) => "🛡️ " + n).join("  ");
+            `🎭 ${s.rogues}`);
+          const names = ["Ann", "Bob", "Cal", "Dee", "Eve"].slice(0, size).map((n) => el("div", {}, `🛡️ ${n}`));
           return el("div", {},
-            el("div", { class: "fails" }, normalRows(v, s.rogues)),
-            el("div", { class: "team" }, `⚔️ ${names}`),
+            el("div", { class: "fails" }, normalRows(v, s.rogues, false)),
+            el("div", { class: "apart" }, chip),
             el("button", { class: "btn record" }, "⚔️ Record quest"),
-            el("div", { class: "apart" }, chip));
+            el("div", { class: "team" }, names));
         }],
       A: ["A · rogue chip", "A small 🎭 chip under the list cycles 0 → 1 → 2 rogues. The list rebuilds with that many 🎭 cards, and the tints flip to match. One tap in the rare case, invisible otherwise.",
         (v) => {
