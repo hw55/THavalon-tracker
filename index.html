@@ -53,6 +53,11 @@
     .names input { flex: 1; min-width: 0; min-height: 44px; padding: 0 .6rem; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; }
     .names .king-pick { min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); opacity: .45; }
     .names .king-pick.on { opacity: 1; background: var(--accent); border-color: var(--accent); }
+    .names .move { min-width: 34px; min-height: 44px; padding: 0; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); }
+    .names .move:disabled { opacity: .25; }
+    .roster { display: flex; gap: .4rem; margin-bottom: .75rem; }
+    .roster input { flex: 1; min-width: 0; min-height: 44px; padding: 0 .6rem; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; text-transform: uppercase; }
+    .roster .btn { min-width: 52px; font-size: 1.3rem; padding: 0 .5rem; }
 
     /* the table: players around a circle in seating order, info in the middle */
     .ring { position: relative; width: min(100%, calc(100dvh - 340px)); aspect-ratio: 1; margin: .25rem auto; }
@@ -162,7 +167,11 @@
       let events = load();
       let ui = freshUi();
       let tab = "capture";
-      function freshUi() { return { chosen: new Set(), approvals: new Set(), fails: null, rogues: 0, agravaine: null, error: "" }; }
+      function freshUi() {
+        return { chosen: new Set(), approvals: new Set(), fails: null, rogues: 0, agravaine: null, error: "",
+          // Setup screen: kept here, not in the inputs, so a redraw (an error, a load, a move) keeps what was typed.
+          setupNames: Array(10).fill(""), setupKing: -1, setupGameId: "", loading: false };
+      }
       ui = { ...ui, ...defaultsFor(Game.replay(events)) };
 
       function load() {
@@ -237,27 +246,74 @@
       }
 
       // ---- phase panels ----
+      // The THavalon server to load players from. `?server=…` points the page at another one (e.g. a local stand-in).
+      const ROSTER_SERVER = new URLSearchParams(location.search).get("server") || "https://thavalon.onrender.com";
+
+      // Fills the seats from the server's player list (join order) and crowns its first proposer.
+      async function loadRoster() {
+        let url;
+        try { url = Game.rosterUrl(ROSTER_SERVER, ui.setupGameId); }
+        catch (error) { ui.error = error.message; renderCapture(); return; }
+        ui.loading = true;
+        ui.error = "";
+        renderCapture();
+        try {
+          const response = await fetch(url, { cache: "no-store" });
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(body.code === "GAME_NOT_FOUND" ? "No game with that ID." : body.message || `The server said ${response.status}.`);
+          }
+          const { players, firstKing } = Game.rosterToSetup(body);
+          ui.setupNames = Array.from({ length: 10 }, (_, i) => players[i] ?? "");
+          ui.setupKing = firstKing;
+        } catch (error) {
+          // fetch rejects with a TypeError when the network or the browser's cross-site check stops it.
+          ui.error = error instanceof TypeError ? "Couldn't reach the THavalon server." : error.message;
+        } finally {
+          ui.loading = false;
+          renderCapture();
+        }
+      }
+
       function setupPanel() {
-        const inputs = [], kingBtns = [];
-        let king = -1;
-        const rows = Array.from({ length: 10 }, (_, i) => {
+        const names = ui.setupNames;
+        // Swapping two seats carries the 👑 with its player.
+        const moveSeat = (from, to) => {
+          [names[from], names[to]] = [names[to], names[from]];
+          if (ui.setupKing === from) ui.setupKing = to;
+          else if (ui.setupKing === to) ui.setupKing = from;
+          renderCapture();
+        };
+        const rows = names.map((name, i) => {
           const input = el("input", { placeholder: `Seat ${i + 1}`, maxlength: "20", autocapitalize: "words" });
-          const pick = el("button", { class: "king-pick", type: "button", title: "First king",
-            onclick: () => { king = i; kingBtns.forEach((b, j) => b.classList.toggle("on", j === i)); } }, "👑");
-          inputs.push(input); kingBtns.push(pick);
-          return el("label", {}, pick, el("span", { class: "seat-no" }, String(i + 1)), input);
+          input.value = name;
+          input.addEventListener("input", () => { names[i] = input.value; });
+          const pick = el("button", { class: `king-pick ${ui.setupKing === i ? "on" : ""}`, type: "button", title: "First king",
+            onclick: () => { ui.setupKing = i; renderCapture(); } }, "👑");
+          const up = el("button", { class: "move", type: "button", title: "Move up", disabled: i === 0, onclick: () => moveSeat(i, i - 1) }, "▲");
+          const down = el("button", { class: "move", type: "button", title: "Move down", disabled: i === names.length - 1,
+            onclick: () => moveSeat(i, i + 1) }, "▼");
+          return el("label", {}, pick, el("span", { class: "seat-no" }, String(i + 1)), input, up, down);
         });
+        const gameId = el("input", { placeholder: "Game ID", maxlength: "12", autocapitalize: "characters", autocomplete: "off" });
+        gameId.value = ui.setupGameId;
+        gameId.addEventListener("input", () => { ui.setupGameId = gameId.value; });
+        gameId.addEventListener("keydown", (event) => { if (event.key === "Enter") loadRoster(); });
+        const roster = el("div", { class: "roster" }, gameId,
+          el("button", { class: "btn", type: "button", title: "Load players from the THavalon server", disabled: ui.loading, onclick: loadRoster },
+            ui.loading ? "⏳" : "📥"));
         // Dev convenience: tap the hint to fill ten names.
         const hint = el("p", { class: "hint", onclick: () => {
-          ["Ann", "Bob", "Cal", "Dee", "Eve", "Fay", "Gus", "Hal", "Ivy", "Jon"].forEach((n, i) => inputs[i].value = n);
+          ["Ann", "Bob", "Cal", "Dee", "Eve", "Fay", "Gus", "Hal", "Ivy", "Jon"].forEach((n, i) => names[i] = n);
+          renderCapture();
         } }, "Names clockwise from any seat. Tap 👑 for the first king.");
         const start = el("button", { class: "btn primary", onclick: () => {
-          const filled = inputs.map((inp, i) => ({ name: inp.value.trim(), seat: i })).filter((p) => p.name);
-          const firstKing = filled.findIndex((p) => p.seat === king);
+          const filled = names.map((name, seat) => ({ name: name.trim(), seat })).filter((p) => p.name);
+          const firstKing = filled.findIndex((p) => p.seat === ui.setupKing);
           if (firstKing < 0) { ui.error = "Tap 👑 next to the first king."; renderCapture(); return; }
           tryAppend({ type: "setup", players: filled.map((p) => p.name), firstKing });
         } }, "▶️ Start game");
-        return el("div", {}, el("h2", {}, "🪑 Players"), hint, el("div", { class: "names" }, rows), start);
+        return el("div", {}, el("h2", {}, "🪑 Players"), roster, hint, el("div", { class: "names" }, rows), start);
       }
 
       // Whoever will propose 5th this quest; kingship moves one seat per proposal.
