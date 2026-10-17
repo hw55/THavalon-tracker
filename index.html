@@ -55,7 +55,6 @@
     .seat .crown { position: absolute; top: -14px; right: -8px; font-size: .95rem; }
     .seat .shield { position: absolute; bottom: -10px; right: -10px; font-size: 1.05rem; }
     .seat .hammer-mark { position: absolute; bottom: -10px; left: -10px; font-size: 1rem; }
-    .seat .agravaine-mark { position: absolute; top: -12px; left: -10px; font-size: 1rem; }
     .seat.selected .token { border-color: var(--accent); background: rgba(124, 108, 240, .35); }
     .seat.selected .name { color: var(--text); }
     .seat.dim { opacity: .35; }
@@ -263,11 +262,11 @@
 
       // One seat on the ring: a round token with a mark inside, the name under it, crown for the king.
       function seat(view, index, extra) {
-        const token = el("span", { class: "token" }, extra.mark ?? "");
+        // A revealed Agravaine shows 👹 in the middle of the token; their vote still shows through the token's colour.
+        const token = el("span", { class: "token" }, revealedAgravaine(view) === index ? "👹" : extra.mark ?? "");
         if (index === view.king) token.append(el("span", { class: "crown" }, "👑"));
         if (extra.shield) token.append(el("span", { class: "shield" }, "🛡️"));
         if (index === hammerSeat(view)) token.append(el("span", { class: "hammer-mark" }, "🔨"));
-        if (revealedAgravaine(view) === index) token.append(el("span", { class: "agravaine-mark" }, "👹"));
         const node = el("button", { class: "seat", type: "button", onclick: extra.onclick }, token, el("span", { class: "name" }, view.players[index]));
         if (extra.class) node.classList.add(...extra.class.split(" ").filter(Boolean));
         return node;
@@ -398,7 +397,7 @@
           }));
         const head = el("tr", {}, el("th", { class: "label" }),
           view.players.map((name, i) => el("th", { class: "vname" },
-            el("span", {}, (revealedAgravaine(view) === i ? "👹" : "") + name.slice(0, 8)))), el("th", { class: "res" }));
+            el("span", {}, name.slice(0, 8) + (revealedAgravaine(view) === i ? "👹" : "")))), el("th", { class: "res" }));
         const width = String(view.players.length + 2);
         const rows = [];
         view.quests.forEach((quest) => {
