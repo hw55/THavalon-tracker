@@ -164,6 +164,27 @@ const Game = (() => {
     };
   }
 
+  // ---- loading players from the THavalon server (GET /api/games/{id}/players, feyweb/THavalon#19) ----
+
+  // The server matches game IDs case-insensitively, but a tidy URL is easier to read in a log.
+  function rosterUrl(server, gameId) {
+    const id = String(gameId ?? "").trim().toUpperCase();
+    if (!id) throw new Error("Enter a game ID.");
+    return `${String(server).replace(/\/+$/, "")}/api/games/${encodeURIComponent(id)}/players`;
+  }
+
+  // The server's reply → the setup screen's seats (join order) and the first king's seat, or -1
+  // before the deal. Join order isn't seating order, so the screen still lets players be moved.
+  function rosterToSetup(roster) {
+    const names = roster?.players;
+    if (!Array.isArray(names) || names.some((name) => typeof name !== "string")) {
+      throw new Error("That isn't a THavalon player list.");
+    }
+    const players = names.map((name) => name.trim()).filter(Boolean);
+    if (players.length > 10) throw new Error("That game has more than 10 players.");
+    return { players, firstKing: players.indexOf(roster.firstProposer ?? null) };
+  }
+
   function undo(events) {
     return events.slice(0, -1);
   }
@@ -179,7 +200,7 @@ const Game = (() => {
     return events;
   }
 
-  return { create, append, undo, replay, serialize, deserialize, TEAM_SIZES };
+  return { create, append, undo, replay, serialize, deserialize, rosterUrl, rosterToSetup, TEAM_SIZES };
 })();
 
 if (typeof module !== "undefined") module.exports = Game;

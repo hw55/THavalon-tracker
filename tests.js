@@ -436,6 +436,44 @@ test("a full 7-player game with a hammer and the quest-4 rule runs to a winner",
   assertEqual(view.quests[2].proposals.length, 5);
 });
 
+// ---------- loading players from the THavalon server (feyweb/THavalon#19) ----------
+
+test("rosterUrl builds the player-list address, tidying the game ID and the server", () => {
+  assertEqual(G.rosterUrl("https://thavalon.onrender.com", "friday"),
+    "https://thavalon.onrender.com/api/games/FRIDAY/players");
+  assertEqual(G.rosterUrl("http://192.168.1.167:9000/", "  hy6h "),
+    "http://192.168.1.167:9000/api/games/HY6H/players", "trailing slash, spaces");
+  assertEqual(G.rosterUrl("https://x.example", "a/b"), "https://x.example/api/games/A%2FB/players", "escaped");
+});
+
+test("rosterUrl refuses an empty game ID", () => {
+  assertThrows(() => G.rosterUrl("https://x.example", "   "), /game ID/i);
+});
+
+test("rosterToSetup keeps join order and finds the first proposer's seat", () => {
+  const setupDraft = G.rosterToSetup({ gameId: "FRIDAY", state: "DEALT", players: ["Ann", "Bob", "Cal", "Dee", "Eve"], firstProposer: "Cal" });
+  assertEqual(setupDraft, { players: ["Ann", "Bob", "Cal", "Dee", "Eve"], firstKing: 2 });
+});
+
+test("rosterToSetup before the deal has no first king yet", () => {
+  assertEqual(G.rosterToSetup({ state: "LOBBY", players: ["Ann", "Bob"], firstProposer: null }).firstKing, -1);
+});
+
+test("rosterToSetup tidies names and drops blanks", () => {
+  assertEqual(G.rosterToSetup({ players: ["  Ann ", "", "Bob"], firstProposer: "Bob" }), { players: ["Ann", "Bob"], firstKing: 1 });
+});
+
+test("rosterToSetup rejects anything that isn't a player list", () => {
+  assertThrows(() => G.rosterToSetup(null), /player list/i);
+  assertThrows(() => G.rosterToSetup({ players: "Ann, Bob" }), /player list/i);
+  assertThrows(() => G.rosterToSetup({ players: ["Ann", 7] }), /player list/i);
+});
+
+test("rosterToSetup rejects more players than the tracker has seats", () => {
+  const eleven = Array.from({ length: 11 }, (_, i) => `P${i}`);
+  assertThrows(() => G.rosterToSetup({ players: eleven }), /10/);
+});
+
 // ---------- report ----------
 
 const failed = results.filter((r) => !r.ok);
