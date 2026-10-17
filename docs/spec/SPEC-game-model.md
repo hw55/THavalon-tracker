@@ -47,13 +47,13 @@ Event types:
 | `setup` | `players: string[]`, `firstKing: number` | Names in clockwise seating order; index of the first king. Always the first event, exactly once. |
 | `propose` | `team: number[]` | The current king proposes this team (player indexes). |
 | `vote` | `approvals: number[]` | Player indexes who approved the current proposal. Everyone else rejected. |
-| `quest` | `fails: number` | The approved team went on the quest and this many fail cards came out. |
+| `quest` | `fails: number`, `rogues?: number` | The approved team went on the quest; this many ordinary fail cards and this many rogue cards (🎭, 0–2, default 0) came out. The rest were successes. |
 
 Rules the model enforces when an event is appended (it throws a descriptive error otherwise):
 - `setup` comes first and only once; 5–10 unique, non-empty names; `firstKing` in range.
 - `propose` only when no proposal is open; team size matches the quest's team size; indexes unique and in range.
 - `vote` only when a proposal is open and it is **not** the hammer (5th proposal of a quest); indexes unique and in range.
-- `quest` only when a proposal has been approved (by vote or by hammer) and the quest hasn't been resolved; `0 ≤ fails ≤ team size`.
+- `quest` only when a proposal has been approved (by vote or by hammer) and the quest hasn't been resolved; `0 ≤ fails`, `0 ≤ rogues ≤ 2`, `fails + rogues ≤ team size`.
 - Nothing after the game is over.
 
 ### Derived view
@@ -71,7 +71,7 @@ Rules the model enforces when an event is appended (it throws a descriptive erro
   teamSize,                // for the current quest
   failsToFail,             // 1, or 2 on quest 4 with 7+ players
   quests: [                // one per quest started, in order
-    { number, proposals: [ { king, team, approvals, approved } ], fails, result } // result: "pass" | "fail" | null
+    { number, proposals: [ { king, team, approvals, approved } ], fails, rogues, result } // result: "pass" | "fail" | null
   ],
   score: { pass, fail },   // quests passed / failed so far
   winner                   // "good" | "evil" | null
@@ -83,7 +83,7 @@ Rules encoded:
 - **Team sizes** (players → quests 1–5): 5: 2 3 2 3 3 · 6: 2 3 4 3 4 · 7: 2 3 3 4 4 · 8–10: 3 4 4 5 5.
 - **Vote:** approved when `approvals.length > players.length / 2`.
 - **Hammer:** the 5th proposal of a quest needs no vote; it is approved automatically.
-- **Quest result:** `fail` when `fails ≥ failsToFail`, else `pass`.
+- **Quest result:** `fail` when `fails ≥ failsToFail`, else `pass`. Then **rogue cards** (🎭, confirmed 2026-10-16): a rogue card is one of the team's cards; one rogue flips that result either way; two rogues cancel out. On quest 4 with 7+ players the two-fail rule is applied first, then the flip.
 - **Game over:** three passes → `winner: "good"`; three fails → `winner: "evil"`. (Assassination is a TODO and not modelled; "good" means "good, pending assassination".)
 
 ### Public API (`game.js`)
@@ -138,6 +138,7 @@ Conventions: `const` everywhere; double quotes; 2-space indent; small named func
 - Vote: 3/5 passes, 2/5 fails; 4/8 fails, 5/8 passes (strict majority).
 - Hammer: 5th proposal can't be voted on and is auto-approved.
 - Quest: 1 fail fails quest 1; on quest 4 with 7 players, 1 fail passes and 2 fails fail; with 6 players 1 fail fails.
+- Rogues: one rogue turns a pass into a fail and a fail into a pass; two rogues cancel; on quest 4 with 7 players `✅✅❌🎭` fails and `✅❌❌🎭` passes; more than 2 rogues, negative rogues, or `fails + rogues` above the team size are rejected; a `quest` event without `rogues` means 0 (older saved games still load).
 - Game over at 3 passes / 3 fails; further events rejected.
 - Undo reverses the last event; undo on an empty log is a no-op.
 - serialize → deserialize round-trips; deserialize rejects a log with an illegal event.

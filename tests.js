@@ -248,6 +248,47 @@ test("quest 4 with 6 players fails on one fail card", () => {
   assertEqual(G.replay(quest(approvedTeam(base, [0, 1, 2]), 1)).quests[3].result, "fail");
 });
 
+// ---------- rogue cards ----------
+
+const rogueQuest = (events, fails, rogues) => G.append(events, { type: "quest", fails, rogues });
+
+test("one rogue turns a pass into a fail", () => {
+  const view = G.replay(rogueQuest(approvedTeam(setup(5), [0, 1]), 0, 1));
+  assertEqual(view.quests[0].result, "fail");
+  assertEqual(view.quests[0].rogues, 1);
+});
+
+test("one rogue turns a fail into a pass", () => {
+  assertEqual(G.replay(rogueQuest(approvedTeam(setup(5), [0, 1]), 1, 1)).quests[0].result, "pass");
+});
+
+test("two rogues cancel out", () => {
+  const quest2 = approvedTeam(quest(approvedTeam(setup(5), [0, 1]), 0), [0, 1, 2]); // quest 2 has a team of 3
+  assertEqual(G.replay(rogueQuest(quest2, 0, 2)).quests[1].result, "pass", "✅🎭🎭");
+  assertEqual(G.replay(rogueQuest(quest2, 1, 2)).quests[1].result, "fail", "❌🎭🎭");
+});
+
+test("quest 4 with 7 players: two-fail rule first, then the rogue flips it", () => {
+  const base = reachQuest4(7, ["pass", "fail", "pass"]);
+  const team = [0, 1, 2, 3];
+  assertEqual(G.replay(rogueQuest(approvedTeam(base, team), 1, 1)).quests[3].result, "fail", "✅✅❌🎭");
+  assertEqual(G.replay(rogueQuest(approvedTeam(base, team), 2, 1)).quests[3].result, "pass", "✅❌❌🎭");
+});
+
+test("rogues outside 0–2 or more cards than the team are rejected", () => {
+  const big = reachQuest4(7, ["pass", "fail", "pass"]);
+  const team4 = approvedTeam(big, [0, 1, 2, 3]);
+  assertThrows(() => rogueQuest(team4, 0, 3), /rogue/i);
+  assertThrows(() => rogueQuest(team4, 0, -1), /rogue/i);
+  assertThrows(() => rogueQuest(approvedTeam(setup(5), [0, 1]), 1, 2), /card|team|2/i);
+});
+
+test("a quest without rogues counts as zero rogues", () => {
+  const view = G.replay(quest(approvedTeam(setup(5), [0, 1]), 0));
+  assertEqual(view.quests[0].rogues, 0);
+  assertEqual(view.quests[0].result, "pass");
+});
+
 // ---------- game over ----------
 
 function playQuests(playerCount, results) {
