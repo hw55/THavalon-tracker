@@ -58,7 +58,10 @@
       color: var(--muted); font-size: 1.3rem; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
     .names label.dragging { position: relative; z-index: 1; border-radius: 10px; background: rgba(124, 108, 240, .22); box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
     .names label.dragging .drag { color: var(--text); cursor: grabbing; }
-    .roster { display: flex; gap: .4rem; margin-top: 1rem; }
+    .roster-box { display: flex; flex-direction: column; gap: .4rem; margin-top: 1rem; }
+    .roster { display: flex; gap: .4rem; align-items: center; }
+    .roster-icon { min-width: 52px; text-align: center; font-size: 1.3rem; }
+    .roster.server input { text-transform: none; font-size: .9rem; color: var(--muted); }
     .roster input { flex: 1; min-width: 0; min-height: 44px; padding: 0 .6rem; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; text-transform: uppercase; }
     .roster .btn { min-width: 52px; font-size: 1.3rem; padding: 0 .5rem; }
 
@@ -173,7 +176,7 @@
       function freshUi() {
         return { chosen: new Set(), approvals: new Set(), fails: null, rogues: 0, agravaine: null, error: "",
           // Setup screen: kept here, not in the inputs, so a redraw (an error, a load, a move) keeps what was typed.
-          setupNames: Array(10).fill(""), setupKing: -1, setupGameId: "", loading: false };
+          setupNames: Array(10).fill(""), setupKing: -1, setupGameId: "", setupServer: defaultServer(), loading: false };
       }
       ui = { ...ui, ...defaultsFor(Game.replay(events)) };
 
@@ -249,13 +252,16 @@
       }
 
       // ---- phase panels ----
-      // The THavalon server to load players from. `?server=…` points the page at another one (e.g. a local stand-in).
-      const ROSTER_SERVER = new URLSearchParams(location.search).get("server") || "https://thavalon.onrender.com";
+      // The game server to load players from: `?server=…` in the page address if given, else the public one.
+      // A function, not a const, because freshUi() runs before this point in the script.
+      function defaultServer() {
+        return new URLSearchParams(location.search).get("server") || "https://thavalon.onrender.com";
+      }
 
       // Fills the seats from the server's player list (join order) and crowns its first proposer.
       async function loadRoster() {
         let url;
-        try { url = Game.rosterUrl(ROSTER_SERVER, ui.setupGameId); }
+        try { url = Game.rosterUrl(ui.setupServer, ui.setupGameId); }
         catch (error) { ui.error = error.message; renderCapture(); return; }
         ui.loading = true;
         ui.error = "";
@@ -323,9 +329,16 @@
         gameId.value = ui.setupGameId;
         gameId.addEventListener("input", () => { ui.setupGameId = gameId.value; });
         gameId.addEventListener("keydown", (event) => { if (event.key === "Enter") loadRoster(); });
-        const roster = el("div", { class: "roster" }, gameId,
-          el("button", { class: "btn", type: "button", title: "Load players from the THavalon server", disabled: ui.loading, onclick: loadRoster },
-            ui.loading ? "⏳" : "📥"));
+        // 🌐 game server (prefilled, editable), then the game ID and 📥.
+        const server = el("input", { placeholder: "thavalon.onrender.com", autocapitalize: "none", autocomplete: "off",
+          spellcheck: "false", inputmode: "url", title: "Game server" });
+        server.value = ui.setupServer;
+        server.addEventListener("input", () => { ui.setupServer = server.value; });
+        const roster = el("div", { class: "roster-box" },
+          el("div", { class: "roster server" }, el("span", { class: "roster-icon", title: "Game server" }, "🌐"), server),
+          el("div", { class: "roster" }, gameId,
+            el("button", { class: "btn", type: "button", title: "Load players from the game server", disabled: ui.loading, onclick: loadRoster },
+              ui.loading ? "⏳" : "📥")));
         // Dev convenience: tap the hint to fill ten names.
         const hint = el("p", { class: "hint", onclick: () => {
           ["Ann", "Bob", "Cal", "Dee", "Eve", "Fay", "Gus", "Hal", "Ivy", "Jon"].forEach((n, i) => names[i] = n);
