@@ -78,6 +78,11 @@
     .fails .btn.fail { background: rgba(248, 81, 73, .08); }
     .fails .btn.on.pass { border-color: var(--green); background: var(--green-bg); }
     .fails .btn.on.fail { border-color: var(--red); background: var(--red-bg); }
+    /* the rare 🎭 counter: set apart below the rows, left-aligned, fixed width so nothing shifts */
+    .rogue { display: flex; margin-top: 2.5rem; padding-top: .75rem; border-top: 1px dashed var(--line); }
+    .rogue .btn { width: 5.5rem; min-height: 44px; font-size: 1.2rem; opacity: .6; font-variant-numeric: tabular-nums; }
+    .rogue .btn.on { opacity: 1; border-color: var(--accent); background: rgba(124, 108, 240, .22); }
+    .quest-team { margin-top: .9rem; display: flex; flex-direction: column; align-items: center; gap: .25rem; }
 
     .over { text-align: center; padding-top: 2rem; }
     .over .winner { font-size: 2rem; font-weight: 800; }
@@ -145,7 +150,7 @@
       let events = load();
       let ui = freshUi();
       let tab = "capture";
-      function freshUi() { return { chosen: new Set(), approvals: new Set(), fails: null, error: "" }; }
+      function freshUi() { return { chosen: new Set(), approvals: new Set(), fails: null, rogues: 0, error: "" }; }
       ui = { ...ui, ...defaultsFor(Game.replay(events)) };
 
       function load() {
@@ -175,7 +180,7 @@
         const seed = {};
         if (last.type === "propose") seed.chosen = new Set(last.team);
         if (last.type === "vote") seed.approvals = new Set(last.approvals);
-        if (last.type === "quest") seed.fails = last.fails;
+        if (last.type === "quest") { seed.fails = last.fails; seed.rogues = last.rogues ?? 0; }
         commit(Game.undo(events), seed);
       }
       function tryAppend(event) {
@@ -319,18 +324,25 @@
 
       function questPanel(view) {
         const proposal = view.quests.at(-1).proposals.at(-1);
-        // One row per possible outcome, all ✅ down to all ❌; each row is tinted by what the model would rule,
-        // so the quest-4 two-fail rule shows itself (the one-❌ row stays green).
+        // One row per possible outcome, all ✅ down to all ❌ (plus any 🎭); each row is tinted by what the
+        // model would rule, so the quest-4 two-fail rule and a rogue's flip show themselves.
         const size = proposal.team.length;
-        const rows = Array.from({ length: size + 1 }, (_, n) => {
-          const outcome = n >= view.failsToFail ? "fail" : "pass";
+        const rogues = ui.rogues;
+        const rows = Array.from({ length: size - rogues + 1 }, (_, n) => {
+          const failed = n >= view.failsToFail;
+          const outcome = failed !== (rogues === 1) ? "fail" : "pass";
           return el("button", { class: `btn ${outcome} ${ui.fails === n ? "on" : ""}`, type: "button",
-            onclick: () => { ui.fails = n; renderCapture(view); } }, "✅".repeat(size - n) + "❌".repeat(n));
+            onclick: () => { ui.fails = n; renderCapture(view); } }, "✅".repeat(size - n - rogues) + "❌".repeat(n) + "🎭".repeat(rogues));
         });
+        // Rare: cycles 0 → 1 → 2 → 0 rogue cards (never more than the team has cards).
+        const rogueBtn = el("button", { class: `btn ${rogues ? "on" : ""}`, type: "button",
+          onclick: () => { ui.rogues = (rogues + 1) % (Math.min(2, size) + 1); ui.fails = null; renderCapture(view); } }, `🎭 ${rogues}`);
         return el("div", {},
           el("div", { class: "fails" }, rows),
-          el("h2", {}, `⚔️ ${proposal.team.map((i) => "🛡️ " + view.players[i]).join("  ")}`),
-          el("button", { class: "btn primary", disabled: ui.fails === null, onclick: () => tryAppend({ type: "quest", fails: ui.fails }) }, "⚔️ Record quest"));
+          el("div", { class: "rogue" }, rogueBtn),
+          el("button", { class: "btn primary", disabled: ui.fails === null,
+            onclick: () => tryAppend({ type: "quest", fails: ui.fails, rogues }) }, "⚔️ Record quest"),
+          el("div", { class: "quest-team" }, proposal.team.map((i) => el("div", {}, `🛡️ ${view.players[i]}`))));
       }
 
       function overPanel(view) {
@@ -381,7 +393,7 @@
           if (quest.result) {
             const size = quest.proposals.at(-1).team.length;
             rows.push(el("tr", { class: "result" }, el("td", { class: "label" }, "⚔️"),
-              el("td", { class: quest.result, colspan: String(view.players.length + 1) }, "✅".repeat(size - quest.fails) + "❌".repeat(quest.fails))));
+              el("td", { class: quest.result, colspan: String(view.players.length + 1) }, "✅".repeat(size - quest.fails - quest.rogues) + "❌".repeat(quest.fails) + "🎭".repeat(quest.rogues))));
             rows.push(el("tr", { class: "gap" }, el("td", { colspan: width })));
           }
         });
