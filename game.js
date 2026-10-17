@@ -95,12 +95,18 @@ const Game = (() => {
     }
     if (!Number.isInteger(rogues) || rogues < 0 || rogues > 2) throw new Error("Rogue cards must be 0, 1 or 2.");
     if (event.fails + rogues > size) throw new Error(`The team only played ${size} cards.`);
+    const agravaine = event.agravaine ?? null;
+    if (agravaine !== null && !openProposal(quest).team.includes(agravaine)) {
+      throw new Error("Agravaine must be one of the players on the team.");
+    }
     quest.fails = event.fails;
     quest.rogues = rogues;
-    // Ordinary cards decide first (incl. the quest-4 two-fail rule); one rogue flips that, two cancel out.
+    quest.agravaine = agravaine;
+    // Ordinary cards decide first (incl. the quest-4 two-fail rule); one rogue flips that, two cancel out;
+    // Agravaine coming out fails the quest whatever the cards said.
     const failed = event.fails >= failsToFail(state.quests.length, state.players.length);
-    quest.result = failed !== (rogues === 1) ? "fail" : "pass";
-    if (!winnerOf(state)) state.quests.push({ proposals: [], fails: null, rogues: null, result: null });
+    quest.result = agravaine !== null || failed !== (rogues === 1) ? "fail" : "pass";
+    if (!winnerOf(state)) state.quests.push({ proposals: [], fails: null, rogues: null, agravaine: null, result: null });
   }
 
   function scoreOf(state) {
@@ -126,7 +132,7 @@ const Game = (() => {
       const handler = HANDLERS[event.type];
       if (!handler) throw new Error(`Unknown event type "${event.type}".`);
       handler(state, event);
-      if (event.type === "setup") state.quests.push({ proposals: [], fails: null, rogues: null, result: null });
+      if (event.type === "setup") state.quests.push({ proposals: [], fails: null, rogues: null, agravaine: null, result: null });
     }
     return view(state);
   }
@@ -151,7 +157,7 @@ const Game = (() => {
       failsToFail: failsToFail(questNumber, playerCount),
       quests: state.quests
         .filter((quest) => quest.proposals.length > 0)
-        .map((quest, i) => ({ number: i + 1, proposals: quest.proposals, fails: quest.fails, rogues: quest.rogues, result: quest.result })),
+        .map((quest, i) => ({ number: i + 1, proposals: quest.proposals, fails: quest.fails, rogues: quest.rogues, agravaine: quest.agravaine, result: quest.result })),
       score,
       winner: winnerOf(state)
     };

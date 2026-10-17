@@ -289,6 +289,39 @@ test("a quest without rogues counts as zero rogues", () => {
   assertEqual(view.quests[0].result, "pass");
 });
 
+// ---------- Agravaine ----------
+
+const agravaineQuest = (events, fails, agravaine, rogues = 0) => G.append(events, { type: "quest", fails, rogues, agravaine });
+
+test("Agravaine fails a quest the cards would pass and is recorded", () => {
+  const view = G.replay(agravaineQuest(approvedTeam(setup(5), [0, 1]), 0, 1));
+  assertEqual(view.quests[0].result, "fail");
+  assertEqual(view.quests[0].agravaine, 1);
+});
+
+test("Agravaine overrides a rogue flip that would have passed the quest", () => {
+  assertEqual(G.replay(agravaineQuest(approvedTeam(setup(5), [0, 1]), 1, 0, 1)).quests[0].result, "fail");
+});
+
+test("Agravaine must be a player on the team", () => {
+  const base = approvedTeam(setup(5), [0, 1]);
+  assertThrows(() => agravaineQuest(base, 0, 3), /team/i);
+  assertThrows(() => agravaineQuest(base, 0, 9), /team|range/i);
+  assertThrows(() => agravaineQuest(base, 0, 0.5), /team|player/i);
+});
+
+test("a quest without Agravaine records null and is decided by the cards", () => {
+  const view = G.replay(quest(approvedTeam(setup(5), [0, 1]), 0));
+  assertEqual(view.quests[0].agravaine, null);
+  assertEqual(view.quests[0].result, "pass");
+});
+
+test("Agravaine fails count toward evil winning", () => {
+  let e = setup(5);
+  for (const team of [[0, 1], [0, 1, 2], [0, 1]]) e = agravaineQuest(approvedTeam(e, team), 0, 0);
+  assertEqual(G.replay(e).winner, "evil");
+});
+
 // ---------- game over ----------
 
 function playQuests(playerCount, results) {
