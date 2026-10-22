@@ -35,6 +35,7 @@ History of the project: what was decided, when, and why; what's deferred; what's
 | 2026-10-16 | SDD stays for `game-model`; `capture` and `review` switch to prototype-driven iteration on the phone over local Wi-Fi. Their specs become living notes. | Layout and gestures can't be approved from ASCII mocks. |
 | 2026-10-16 | Setup shows ten name fields (we usually play with 10); blank fields are empty seats. | Fewest taps for the common case. |
 | 2026-10-16 | Review grid: players as columns, proposals as rows, team shown as a shaded band per row, quest result rows inside the same grid. | Votes, team and result read together in one place. |
+| 2026-10-22 | PWA standalone support; setup server box removed (?server query param kept); review grid crown on top-right, shield on bottom-right with 2x size; proposal result column shows approval count colored green/red. | Maximize screen real estate, streamline setup, improve readability of review grid badges and vote outcomes. |
 
 ## Before completion (in order, one at a time)
 

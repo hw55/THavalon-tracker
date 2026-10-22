@@ -13,6 +13,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0f1115">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Thavalon">
   <title>Thavalon</title>
   <style>
     :root {
@@ -118,21 +123,26 @@
     .score .q.pass b { color: var(--green); } .score .q.fail b { color: var(--red); } .score .q.now b { color: var(--accent); }
     .score .total { font-weight: 700; font-size: 1.1rem; }
     table.grid { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: .9rem; }
-    .grid th, .grid td { text-align: center; padding: 0; height: 32px; border-bottom: 1px solid var(--line); }
+    .grid th, .grid td { text-align: center; padding: 0; height: 36px; border-bottom: 1px solid var(--line); }
     .grid th { position: sticky; top: 0; background: var(--bg); font-weight: 600; vertical-align: bottom; padding-bottom: .3rem; }
     .grid th.vname span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-size: .75rem; }
     .grid td.label, .grid th.label { width: 2rem; color: var(--muted); font-size: .8rem; font-weight: 700; }
-    .grid td.res, .grid th.res { width: 1.6rem; }
+    .grid td.res, .grid th.res { width: 1.8rem; }
     .grid td.team { background: var(--team); }
     .grid td.yes { color: var(--green); } .grid td.no { color: var(--red); opacity: .7; }
     .grid td.pending { color: var(--muted); }
-    .grid td .crown { font-size: .7rem; vertical-align: super; }
+    .grid .vbox { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+    .grid .vbox .sym { font-size: .95rem; line-height: 1; }
+    .grid .vbox .crown { position: absolute; top: -3px; right: 0; font-size: 1.15rem; line-height: 1; pointer-events: none; }
+    .grid .vbox .shield { position: absolute; bottom: -3px; right: 0; font-size: 1.15rem; line-height: 1; pointer-events: none; }
     .grid tr.quest-start td { border-top: 2px solid var(--muted); }
     .grid tr.result td { height: 28px; font-size: .85rem; letter-spacing: 1px; }
     .grid tr.result td.pass { background: var(--green-bg); } .grid tr.result td.fail { background: var(--red-bg); }
     .grid tr.gap td { height: 14px; border: 0; }
-    .grid .vdot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
-    .grid .vdot.g { background: var(--green); } .grid .vdot.r { background: var(--red); opacity: .7; }
+    .grid .vcount { font-size: .95rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+    .grid .vcount.g { color: var(--green); }
+    .grid .vcount.r { color: var(--red); opacity: .85; }
+    .grid .vcount.hammer { font-size: .85rem; }
 
     nav.tabs { display: flex; border-top: 1px solid var(--line); background: var(--panel); padding-bottom: env(safe-area-inset-bottom); }
     nav.tabs button { flex: 1; min-height: 52px; border: 0; background: none; color: var(--muted); font-weight: 600; }
@@ -334,13 +344,7 @@
         gameId.value = ui.setupGameId;
         gameId.addEventListener("input", () => { ui.setupGameId = gameId.value; });
         gameId.addEventListener("keydown", (event) => { if (event.key === "Enter") loadRoster(); });
-        // 🌐 game server (prefilled, editable), then the game ID and 📥.
-        const server = el("input", { placeholder: "thavalon.onrender.com", autocapitalize: "none", autocomplete: "off",
-          spellcheck: "false", inputmode: "url", title: "Game server" });
-        server.value = ui.setupServer;
-        server.addEventListener("input", () => { ui.setupServer = server.value; });
         const roster = el("div", { class: "roster-box" },
-          el("div", { class: "roster server" }, el("span", { class: "roster-icon", title: "Game server" }, "🌐"), server),
           el("div", { class: "roster" }, gameId,
             el("button", { class: "btn", type: "button", title: "Load players from the game server", disabled: ui.loading, onclick: loadRoster },
               ui.loading ? "⏳" : "📥")));
@@ -514,19 +518,29 @@
             const hammer = p.approvals === null && p.approved === true;
             const tr = el("tr", { class: pi === 0 ? "quest-start" : "" }, el("td", { class: "label" }, pi === 0 ? String(quest.number) : ""));
             view.players.forEach((_, i) => {
-              let text = "·", cls = "pending";
+              let sym = "·", cls = "pending";
+              const onTeam = p.team.includes(i);
               if (p.approvals !== null) {
                 // Votes against expectation get their own icon: 🐸 approved a team they're not on, 🍎 rejected their own team.
-                const yes = p.approvals.includes(i), onTeam = p.team.includes(i);
-                text = yes ? (onTeam ? "🟢" : "🐸") : (onTeam ? "🍎" : "🔴");
+                const yes = p.approvals.includes(i);
+                sym = yes ? (onTeam ? "🟢" : "🐸") : (onTeam ? "🍎" : "🔴");
                 cls = yes ? "yes" : "no";
               }
-              else if (hammer) { text = ""; cls = ""; }
-              const td = el("td", { class: `${cls} ${p.team.includes(i) ? "team" : ""}` }, text);
-              if (p.king === i) td.append(el("span", { class: "crown" }, "👑"));
+              else if (hammer) { sym = ""; cls = ""; }
+              const box = el("span", { class: "vbox" });
+              if (p.king === i) box.append(el("span", { class: "crown" }, "👑"));
+              box.append(el("span", { class: "sym" }, sym));
+              if (onTeam) box.append(el("span", { class: "shield" }, "🛡️"));
+              const td = el("td", { class: `${cls} ${onTeam ? "team" : ""}` }, box);
               tr.append(td);
             });
-            const res = hammer ? "🔨" : p.approved === null ? "" : el("span", { class: `vdot ${p.approved ? "g" : "r"}` });
+            let res = "";
+            if (hammer) {
+              res = el("span", { class: "vcount hammer", title: "Hammer" }, "🔨");
+            } else if (p.approved !== null) {
+              const count = p.approvals ? p.approvals.length : 0;
+              res = el("span", { class: `vcount ${p.approved ? "g" : "r"}` }, String(count));
+            }
             tr.append(el("td", { class: "res" }, res));
             rows.push(tr);
           });
@@ -565,6 +579,16 @@
       }, { passive: true });
 
       // ---- header actions ----
+      const h1 = $("header h1");
+      h1.style.cursor = "pointer";
+      h1.title = "Toggle fullscreen";
+      h1.addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        } else {
+          document.exitFullscreen?.().catch(() => {});
+        }
+      });
       undoBtn.addEventListener("click", back);
       function newGame() {
         if (events.length && !confirm("Clear this game and start a new one?")) return;
